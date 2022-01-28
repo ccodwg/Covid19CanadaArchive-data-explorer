@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.4/css/jquery.dataTables.min.css">
+    <!-- treejs: https://www.cssscript.com/folder-tree-treejs/ -->
+    <script src="lib/treejs/tree.min.js"></script>
+    <link rel="stylesheet" href="lib/treejs/treejs.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
+    <style>
+        h2.pagetitle {
+            padding-left: 1%;
+        }
+        div.half {
+            box-sizing: border-box;
+            width: 50%;
+            padding-left:2%;
+            padding-right:4%;
+            display: inline-block;
+            vertical-align: text-top;
+            border-style: double;
+        }
+        div.half-right {
+            display: none;
+            padding-top: 1%;
+            padding-bottom: 1%;
+            /* position: fixed; */
+            /* top: 20px; */
+        }
+    </style>
+    <script>
+
+        // function: get datasets
+        async function getDatasets() {
+            return $.getJSON('https://api.opencovid.ca/datasets')
+        }
+
+        // function: get parent directories
+        async function getParentDirs(json_datasets) {
+            let parent_dirs = []
+            // get parent directories
+            $.each(json_datasets, function(k, v) {
+                parent_dirs.push(v['dir_parent'])
+            });
+            // sort unique values
+            parent_dirs = [...new Set(parent_dirs)].sort()
+            // move 'other' directories to the end of the array
+            let max_dirs = parent_dirs.length
+            let parent_dirs_other = []
+            for (let i = 0; i < max_dirs; i++) {
+                d = parent_dirs[i]
+                if (d.match('other/')) {
+                    parent_dirs_other.push(d)
+                }
+            };
+            parent_dirs = parent_dirs.filter(function(d) {
+                return !d.match('other/')
+            });
+            parent_dirs = parent_dirs.concat(parent_dirs_other)
+            return parent_dirs
+        }
+
+        // function: get file directories
+        async function getFileDirs(json_datasets, parent_dirs) {
+            let file_dirs = {}
+            $.each(parent_dirs, function(i) {
+                file_dirs[parent_dirs[i]] = {}
+            });
+            $.each(json_datasets, function(k, v) {
+                pd = [v['dir_parent']]
+                file_dirs[pd][k] = v
+            });
+            return file_dirs
+        }
+
+        // function: get UUID
+        async function getUUID(uuid) {
+            return json_uuid = $.getJSON('https://api.opencovid.ca/archive?uuid=' + uuid)
+        }
+
+        // function: build table
+        async function buildTable(uuid) {
+
+            // get JSON for UUID
+            const json_uuid = await getUUID(uuid)
+            
+            // construct HTML link to file for table
+            $.each(json_uuid, function (i, j) {
+                j['file_link'] = '<a href="' + j['file_url'] + '">' + j['file_name'] + '</a>'
+            });
+
+            // initialize table or update table
+            if (!$.fn.dataTable.isDataTable($('#table'))) {
+                // initialize table
+                $('#table').DataTable({
+                bAutoWidth : false,
+                aaData : json_uuid,
+                aoColumns : [{
+                    "data": "file_date_true"
+                }, {
+                    "data": "file_link"
+                }],
+                columnDefs: [{
+                    title: "Date",
+                    targets: 0
+                }, {
+                    title: "File name",
+                    targets: 1
+                }],
+                order: [[0, "desc"]]
+                });
+                // enable table
+                $('.half-right').css('display', 'inline-block')
+
+            } else {
+                // update table
+                let datatable = $('#table').DataTable()
+                datatable.clear().rows.add(json_uuid).draw();
+            }
+
+            // jump to top of page
+            $('#archive-title')[0].scrollIntoView();
+        }
+
+        // function: build page
+        async function buildPage() {
+            // get JSON datasets
+            const json_datasets = await getDatasets()
+
+            // get list of parent directories
+            const parent_dirs = await getParentDirs(json_datasets)
+
+            // get list of file directories
+            const file_dirs = await getFileDirs(json_datasets, parent_dirs)
+
+            // build tree
+            const root = new TreeNode('archive')
+            $.each(file_dirs, function(k, v) {
+                window[k] = new TreeNode(k)
+                root.addChild(window[k])
+                // add child directories in alphabetical order
+                let fd = []
+                $.each(v, function (k1, v1) {
+                    fd.push([k1, v[k1]['dir_file']]);
+                });
+                fd.sort(function(a, b) {
+                    if (a[1] < b[1]) return -1;
+                    if (a[1] > b[1]) return 1;
+                    return 0;
+                });
+                $.each(fd, function(i, j) {
+                    window[j[0]] = new TreeNode(j[1])
+                    // add on click function to build table
+                    window[j[0]].on('click', function(){buildTable(j[0]);})
+                    // add node as child
+                    window[k].addChild(window[j[0]])
+                });
+                // closed by default
+                window[k].setExpanded(false)
+            });
+            
+            // initialize tree
+            var tree = new TreeView(root, "#tree")
+        }
+
+        // build page
+        buildPage()
+
+    </script>
+</head>
+<body>
+    <h2 id="archive-title" class="pagetitle">Canadian COVID-19 Data Archive: Data Explorer</h2>
+
+    <div id="container">
+        <div id="tree" class="half"></div><div id="table-container" class="half half-right"><table id="table" class="display"></table></div>
+    </div>
+</body>
+</html>
