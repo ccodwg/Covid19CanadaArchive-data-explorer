@@ -86,9 +86,14 @@
             // get JSON for UUID
             const json_uuid = await getUUID(uuid)
             
-            // construct HTML link to file for table
+            // modify raw variables
             $.each(json_uuid, function (i, j) {
+                // construct HTML link to file for table
                 j['file_link'] = '<a href="' + j['file_url'] + '">' + j['file_name'] + '</a>'
+                // convert bytes to MB
+                j['file_size_mb'] = j['file_size'] / 1000000 + ' MB'
+                // Duplicate or no
+                j['file_duplicate'] = j['file_etag_duplicate'] == 1 ? 'Yes' : 'No'
             });
 
             // initialize table or update table
@@ -97,18 +102,40 @@
                 $('#table').DataTable({
                 bAutoWidth : false,
                 aaData : json_uuid,
-                aoColumns : [{
-                    "data": "file_date_true"
-                }, {
-                    "data": "file_link"
-                }],
-                columnDefs: [{
-                    title: "Date",
-                    targets: 0
-                }, {
-                    title: "File name",
-                    targets: 1
-                }],
+                aoColumns : [
+                    {
+                        "data": "file_date_true"
+                    },
+                    {
+                        "data": "file_link"
+                    },
+                    {
+                        "data": "file_size_mb"
+                    },
+                    {
+                        "data": "file_duplicate"
+                    }
+                ],
+                columnDefs: [
+                    {
+                        title: "Date",
+                        targets: 0
+                    },
+                    {
+                        title: "File name",
+                        targets: 1
+                    },
+                    {
+                        title: "File size (MB)",
+                        targets: 2,
+                        className: "dt-center"
+                    },
+                    {
+                        title: "Duplicate file?",
+                        targets: 3,
+                        className: "dt-center"
+                    }
+                ],
                 order: [[0, "desc"]]
                 });
                 // enable table
