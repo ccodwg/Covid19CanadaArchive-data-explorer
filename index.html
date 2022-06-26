@@ -10,14 +10,17 @@
     <link rel="stylesheet" href="lib/treejs/treejs.min.css">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
     <style>
-        h2.pagetitle {
+        h2.leftpad {
+            padding-left: 1%;
+        }
+        p.leftpad {
             padding-left: 1%;
         }
         div.half {
             box-sizing: border-box;
             width: 50%;
-            padding-left:2%;
-            padding-right:4%;
+            padding-left: 2%;
+            padding-right: 4%;
             display: inline-block;
             vertical-align: text-top;
             border-style: double;
@@ -28,6 +31,13 @@
             padding-bottom: 1%;
             /* position: fixed; */
             /* top: 20px; */
+        }
+        div.fullpad {
+            padding-left: 1%;
+            padding-right: 1%;
+            padding-top: 1%;
+            padding-bottom: 1%;
+            border-style: double;
         }
     </style>
     <script>
@@ -80,8 +90,8 @@
             return json_uuid = $.getJSON('https://api.opencovid.ca/archive?uuid=' + uuid)
         }
 
-        // function: build table
-        async function buildTable(uuid) {
+        // function: build files table
+        async function buildTableFiles(uuid) {
 
             // get JSON for UUID
             const json_uuid = await getUUID(uuid)
@@ -97,9 +107,9 @@
             });
 
             // initialize table or update table
-            if (!$.fn.dataTable.isDataTable($('#table'))) {
+            if (!$.fn.dataTable.isDataTable($('#table-files'))) {
                 // initialize table
-                $('#table').DataTable({
+                $('#table-files').DataTable({
                 bAutoWidth : false,
                 aaData : json_uuid,
                 aoColumns : [
@@ -143,12 +153,74 @@
 
             } else {
                 // update table
-                let datatable = $('#table').DataTable()
+                let datatable = $('#table-files').DataTable()
                 datatable.clear().rows.add(json_uuid).draw();
             }
 
             // jump to top of page
-            $('#archive-title')[0].scrollIntoView();
+            $('#title-archive')[0].scrollIntoView();
+        }
+
+        // function: build datasets table
+        async function buildTableDatasets(json_datasets) {
+
+            // extract data from JSON
+            const datasets = Object.keys(json_datasets).map(key => json_datasets[key]);
+
+            // add "url" value for entries with dynamic URLs
+            $.each(datasets, function(i, j) {
+                if (typeof(j["url"]) == "undefined") {
+                    j["url"] = "This URL is dynamic and retrieved from: " + j["metadata"]["meta_url"]
+                }
+            });
+
+            // initialize table
+            $('#table-datasets').DataTable({
+                bAutoWidth : false,
+                aaData : datasets,
+                aoColumns : [
+                    {
+                        "mData": "id_name"
+                    },
+                    {
+                        "mData": "dir_parent"
+                    },
+                    {
+                        "mData": "dir_file"
+                    },
+                    {
+                        "mData": "active"
+                    },
+                    {
+                        "mData": "url"
+                    }
+                ],
+                columnDefs: [
+                    {
+                        title: "Name",
+                        targets: 0
+                    },
+                    {
+                        title: "Parent directory",
+                        targets: 1
+                    },
+                    {
+                        title: "File directory",
+                        targets: 2,
+                    },
+                    {
+                        title: "Active?",
+                        targets: 3,
+                        searchable: false
+                    },
+                    {
+                        title: "URL",
+                        targets: 4,
+                    }
+                ],
+                order: [[0, "asc"]],
+                pageLength: 25
+                });
         }
 
         // function: build page
@@ -180,7 +252,7 @@
                 $.each(fd, function(i, j) {
                     window[j[0]] = new TreeNode(j[1])
                     // add on click function to build table
-                    window[j[0]].on('click', function(){buildTable(j[0]);})
+                    window[j[0]].on('click', function(){buildTableFiles(j[0]);})
                     // add node as child
                     window[k].addChild(window[j[0]])
                 });
@@ -190,6 +262,9 @@
             
             // initialize tree
             var tree = new TreeView(root, "#tree")
+
+            // build datasets table
+            buildTableDatasets(json_datasets)
         }
 
         // build page
@@ -198,10 +273,18 @@
     </script>
 </head>
 <body>
-    <h2 id="archive-title" class="pagetitle">Canadian COVID-19 Data Archive: Data Explorer</h2>
+    <h2 id="title-archive" class="leftpad">Canadian COVID-19 Data Archive: Data Explorer</h2>
 
-    <div id="container">
-        <div id="tree" class="half"></div><div id="table-container" class="half half-right"><table id="table" class="display"></table></div>
+    <p class="leftpad">Datasets are identified by their unique file directory; see <a href="#table-datasets">Search list of datasets</a> below.</p>
+
+    <div id="container-files">
+        <div id="tree" class="half"></div><div id="table-container" class="half half-right"><table id="table-files" class="display"></table></div>
     </div>
+
+    <h2 id="title-datasets" class="leftpad">Search list of datasets</h2>
+    <div id="container-datasets" class="fullpad">
+        <table id="table-datasets" class="display"></table></div>
+    </div>
+
 </body>
 </html>
