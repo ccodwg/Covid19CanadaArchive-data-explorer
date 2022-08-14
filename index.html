@@ -52,7 +52,7 @@
             let parent_dirs = []
             // get parent directories
             $.each(json_datasets, function(k, v) {
-                parent_dirs.push(v['dir_parent'])
+                parent_dirs.push(v['metadata']['meta_group_1'])
             });
             // sort unique values
             parent_dirs = [...new Set(parent_dirs)].sort()
@@ -61,12 +61,12 @@
             let parent_dirs_other = []
             for (let i = 0; i < max_dirs; i++) {
                 d = parent_dirs[i]
-                if (d.match('other/')) {
+                if (d.match('Other: ')) {
                     parent_dirs_other.push(d)
                 }
             };
             parent_dirs = parent_dirs.filter(function(d) {
-                return !d.match('other/')
+                return !d.match('Other: ')
             });
             parent_dirs = parent_dirs.concat(parent_dirs_other)
             return parent_dirs
@@ -79,7 +79,7 @@
                 file_dirs[parent_dirs[i]] = {}
             });
             $.each(json_datasets, function(k, v) {
-                pd = [v['dir_parent']]
+                pd = [v['metadata']['meta_group_1']]
                 file_dirs[pd][k] = v
             });
             return file_dirs
@@ -235,7 +235,7 @@
             const file_dirs = await getFileDirs(json_datasets, parent_dirs)
 
             // build tree
-            const root = new TreeNode('archive')
+            const root = new TreeNode('Archive')
             $.each(file_dirs, function(k, v) {
                 window[k] = new TreeNode(k)
                 root.addChild(window[k])
