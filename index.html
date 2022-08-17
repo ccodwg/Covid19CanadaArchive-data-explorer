@@ -47,10 +47,10 @@
             return $.getJSON('https://api.opencovid.ca/datasets')
         }
 
-        // function: get parent directories
-        async function getParentDirs(json_datasets) {
+        // function: get directories
+        async function getDirs(json_datasets) {
             let parent_dirs = []
-            // get parent directories
+            // get parent directories ('meta_group_1')
             $.each(json_datasets, function(k, v) {
                 parent_dirs.push(v['metadata']['meta_group_1'])
             });
@@ -69,20 +69,74 @@
                 return !d.match('Other: ')
             });
             parent_dirs = parent_dirs.concat(parent_dirs_other)
-            return parent_dirs
+            // convert array to object
+            dirs = parent_dirs.reduce(function(obj, item) {
+                obj[item] = {};
+                return obj;
+            }, {});
+            // add second-level directories ('meta_group_2') to top-level directories
+            $.each(json_datasets, function(k, v) {
+                let dir = v['metadata']['meta_group_1']
+                let subdir = v['metadata']['meta_group_2']
+                if (subdir != undefined) {
+                    dirs[dir][subdir] = {}
+                };
+            });
+            // add second-level directory 'Parent' to top-level directories (in last place)
+            $.each(dirs, function(k, v) {
+                dirs[k]['Parent'] = {}
+            });
+            // add file groups ('meta_url_name') to second-level directories
+            $.each(json_datasets, function(k, v) {
+                let dir = v['metadata']['meta_group_1']
+                let subdir = v['metadata']['meta_group_2']
+                let file_group = v['metadata']['meta_url_name']
+                if (subdir == undefined) {
+                    dirs[dir]['Parent'][file_group] = {}
+                } else {
+                    dirs[dir][subdir][file_group] = {}
+                };
+            });
+            // sort file groups
+            $.each(dirs, function(k, v) {
+                $.each(dirs[k], function(k2, v2) {
+                    dirs[k][k2] = Object.keys(dirs[k][k2]).sort().reduce(function(obj, item) {
+                        obj[item] = dirs[k][k2][item];
+                        return obj;
+                    }, {});
+                });
+            });
+            // return object
+            return dirs
         }
 
-        // function: get file directories
-        async function getFileDirs(json_datasets, parent_dirs) {
-            let file_dirs = {}
-            $.each(parent_dirs, function(i) {
-                file_dirs[parent_dirs[i]] = {}
-            });
+        // function: add files to directories
+        async function getFiles(json_datasets, dirs) {
+            // add files to directories
             $.each(json_datasets, function(k, v) {
-                pd = [v['metadata']['meta_group_1']]
-                file_dirs[pd][k] = v
+                let dir = v['metadata']['meta_group_1']
+                let subdir = v['metadata']['meta_group_2']
+                let file_group = v['metadata']['meta_url_name']
+                let file = v['metadata']['meta_name']
+                if (subdir == undefined) {
+                    dirs[dir]['Parent'][file_group][file] = v
+                } else {
+                    dirs[dir][subdir][file_group][file] = v
+                };
             });
-            return file_dirs
+            // sort files
+            $.each(dirs, function(k, v) {
+                $.each(dirs[k], function(k2, v2) {
+                    $.each(dirs[k][k2], function(k3, v3) {
+                        dirs[k][k2][k3] = Object.keys(dirs[k][k2][k3]).sort().reduce(function(obj, item) {
+                            obj[item] = dirs[k][k2][k3][item];
+                            return obj;
+                        }, {});
+                    });
+                });
+            });
+            // return object
+            return dirs
         }
 
         // function: get UUID
@@ -228,36 +282,54 @@
             // get JSON datasets
             const json_datasets = await getDatasets()
 
-            // get list of parent directories
-            const parent_dirs = await getParentDirs(json_datasets)
+            // get directories
+            let dirs = await getDirs(json_datasets)
 
-            // get list of file directories
-            const file_dirs = await getFileDirs(json_datasets, parent_dirs)
+            // add files to directories
+            dirs = await getFiles(json_datasets, dirs)
 
             // build tree
             const root = new TreeNode('Archive')
-            $.each(file_dirs, function(k, v) {
-                window[k] = new TreeNode(k)
-                root.addChild(window[k])
-                // add child directories in alphabetical order
-                let fd = []
-                $.each(v, function (k1, v1) {
-                    fd.push([k1, v[k1]['dir_file']]);
+            // add nodes for first-level directories
+            $.each(dirs, function(k, v) {
+                let node = new TreeNode(k)
+                root.addChild(node)
+                // add nodes for second-level directories
+                $.each(v, function(k2, v2) {
+                    if (k2 != 'Parent') {
+                        // second-level directory exists
+                        let node2 = new TreeNode(k2)
+                        node.addChild(node2)
+                        // add nodes for third-level directories
+                        $.each(v2, function(k3, v3) {
+                            let node3 = new TreeNode(k3)
+                            node2.addChild(node3)
+                            // add nodes for files
+                            $.each(v3, function(k4, v4) {
+                                let node4 = new TreeNode(k4)
+                                node4.on('click', function(){buildTableFiles(v4['uuid']);}) // add table build function on click
+                                node3.addChild(node4)
+                            });
+                            node3.setExpanded(false) // collapsed by default
+                        });
+                        node2.setExpanded(false) // collapsed by default
+                    } else {
+                        // second-level directory does not exist (i.e., use parent directory)
+                        // add third-level directories
+                        $.each(v2, function(k3, v3) {
+                            let node3 = new TreeNode(k3)
+                            node.addChild(node3)
+                            // add nodes for files
+                            $.each(v3, function(k4, v4) {
+                                let node4 = new TreeNode(k4)
+                                node4.on('click', function(){buildTableFiles(v4['uuid']);}) // add table build function on click
+                                node3.addChild(node4)
+                            });
+                            node3.setExpanded(false) // collapsed by default
+                        });
+                    };
                 });
-                fd.sort(function(a, b) {
-                    if (a[1] < b[1]) return -1;
-                    if (a[1] > b[1]) return 1;
-                    return 0;
-                });
-                $.each(fd, function(i, j) {
-                    window[j[0]] = new TreeNode(j[1])
-                    // add on click function to build table
-                    window[j[0]].on('click', function(){buildTableFiles(j[0]);})
-                    // add node as child
-                    window[k].addChild(window[j[0]])
-                });
-                // closed by default
-                window[k].setExpanded(false)
+                node.setExpanded(false) // collapsed by default
             });
             
             // initialize tree
@@ -275,7 +347,7 @@
 <body>
     <h2 id="title-archive" class="leftpad">Canadian COVID-19 Data Archive: Data Explorer</h2>
 
-    <p class="leftpad">Datasets are identified by their unique file directory; see <a href="#table-datasets">Search list of datasets</a> below.</p>
+    <p class="leftpad">Datasets are identified by name; see <a href="#table-datasets">Search list of datasets</a> for more details on each dataset.</p>
 
     <div id="container-files">
         <div id="tree" class="half"></div><div id="table-container" class="half half-right"><table id="table-files" class="display"></table></div>
