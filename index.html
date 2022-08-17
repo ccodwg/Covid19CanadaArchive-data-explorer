@@ -138,6 +138,54 @@
             // return object
             return dirs
         }
+        
+        // function: build tree
+        async function buildTree(dirs) {
+            let root = new TreeNode('Archive')
+            // add nodes for first-level directories
+            $.each(dirs, function(k, v) {
+                let node = new TreeNode(k)
+                root.addChild(node)
+                // add nodes for second-level directories
+                $.each(v, function(k2, v2) {
+                    if (k2 != 'Parent') {
+                        // second-level directory exists
+                        let node2 = new TreeNode(k2)
+                        node.addChild(node2)
+                        // add nodes for third-level directories
+                        $.each(v2, function(k3, v3) {
+                            let node3 = new TreeNode(k3)
+                            node2.addChild(node3)
+                            // add nodes for files
+                            $.each(v3, function(k4, v4) {
+                                let node4 = new TreeNode(k4)
+                                node4.on('click', function(){buildTableFiles(v4['uuid']);}) // add table build function on click
+                                node3.addChild(node4)
+                            });
+                            node3.setExpanded(false) // collapsed by default
+                        });
+                        node2.setExpanded(false) // collapsed by default
+                    } else {
+                        // second-level directory does not exist (i.e., use parent directory)
+                        // add third-level directories
+                        $.each(v2, function(k3, v3) {
+                            let node3 = new TreeNode(k3)
+                            node.addChild(node3)
+                            // add nodes for files
+                            $.each(v3, function(k4, v4) {
+                                let node4 = new TreeNode(k4)
+                                node4.on('click', function(){buildTableFiles(v4['uuid']);}) // add table build function on click
+                                node3.addChild(node4)
+                            });
+                            node3.setExpanded(false) // collapsed by default
+                        });
+                    };
+                });
+                node.setExpanded(false) // collapsed by default
+            });
+            // return tree
+            return root
+        }
 
         // function: get UUID
         async function getUUID(uuid) {
@@ -210,6 +258,10 @@
                 let datatable = $('#table-files').DataTable()
                 datatable.clear().rows.add(json_uuid).draw();
             }
+
+            // update API URL
+            let api_url = 'https://api.opencovid.ca/archive?uuid=' + uuid
+            $('#api-url').html('<a href="' + api_url + '">' + api_url + '</a>')
 
             // jump to top of page
             $('#title-archive')[0].scrollIntoView();
@@ -289,48 +341,7 @@
             dirs = await getFiles(json_datasets, dirs)
 
             // build tree
-            const root = new TreeNode('Archive')
-            // add nodes for first-level directories
-            $.each(dirs, function(k, v) {
-                let node = new TreeNode(k)
-                root.addChild(node)
-                // add nodes for second-level directories
-                $.each(v, function(k2, v2) {
-                    if (k2 != 'Parent') {
-                        // second-level directory exists
-                        let node2 = new TreeNode(k2)
-                        node.addChild(node2)
-                        // add nodes for third-level directories
-                        $.each(v2, function(k3, v3) {
-                            let node3 = new TreeNode(k3)
-                            node2.addChild(node3)
-                            // add nodes for files
-                            $.each(v3, function(k4, v4) {
-                                let node4 = new TreeNode(k4)
-                                node4.on('click', function(){buildTableFiles(v4['uuid']);}) // add table build function on click
-                                node3.addChild(node4)
-                            });
-                            node3.setExpanded(false) // collapsed by default
-                        });
-                        node2.setExpanded(false) // collapsed by default
-                    } else {
-                        // second-level directory does not exist (i.e., use parent directory)
-                        // add third-level directories
-                        $.each(v2, function(k3, v3) {
-                            let node3 = new TreeNode(k3)
-                            node.addChild(node3)
-                            // add nodes for files
-                            $.each(v3, function(k4, v4) {
-                                let node4 = new TreeNode(k4)
-                                node4.on('click', function(){buildTableFiles(v4['uuid']);}) // add table build function on click
-                                node3.addChild(node4)
-                            });
-                            node3.setExpanded(false) // collapsed by default
-                        });
-                    };
-                });
-                node.setExpanded(false) // collapsed by default
-            });
+            let root = await buildTree(dirs)
             
             // initialize tree
             var tree = new TreeView(root, "#tree")
@@ -350,7 +361,7 @@
     <p class="leftpad">Datasets are identified by name; see <a href="#table-datasets">Search list of datasets</a> for more details on each dataset.</p>
 
     <div id="container-files">
-        <div id="tree" class="half"></div><div id="table-container" class="half half-right"><table id="table-files" class="display"></table></div>
+        <div id="tree" class="half"></div><div id="table-container" class="half half-right"><table id="table-files" class="display"></table><p class="leftpad">Data retrieved from: <span id="api-url"></span></p></div>
     </div>
 
     <h2 id="title-datasets" class="leftpad">Search list of datasets</h2>
