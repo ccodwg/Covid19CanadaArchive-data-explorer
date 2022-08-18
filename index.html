@@ -39,6 +39,9 @@
             padding-bottom: 1%;
             border-style: double;
         }
+        #table-files td {
+            word-break: break-word
+        }
     </style>
     <script>
 
@@ -231,6 +234,7 @@
                 columnDefs: [
                     {
                         title: "Date",
+                        width: "20%",
                         targets: 0
                     },
                     {
@@ -239,11 +243,13 @@
                     },
                     {
                         title: "File size (MB)",
+                        width: "20%",
                         targets: 2,
                         className: "dt-center"
                     },
                     {
                         title: "Duplicate file?",
+                        width: "10%",
                         targets: 3,
                         className: "dt-center"
                     }
