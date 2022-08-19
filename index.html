@@ -345,6 +345,17 @@
                 });
         }
 
+        // function: get value of parameter in query string
+        function getParamFromQueryString(param) {
+            const params = new Proxy(new URLSearchParams(window.location.search), {
+                get: (searchParams, prop) => searchParams.get(prop),
+            });
+            // get value of chosen parameter
+            let value = params[param]
+            // return value
+            return value
+        }
+
         // function: build page
         async function buildPage() {
             // get JSON datasets
@@ -360,7 +371,7 @@
             let root = await buildTree(dirs)
             
             // initialize tree
-            var tree = new TreeView(root, "#tree")
+            let tree = new TreeView(root, "#tree")
 
             // build datasets table
             buildTableDatasets(json_datasets)
