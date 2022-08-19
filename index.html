@@ -47,15 +47,19 @@
 
         // function: get datasets
         async function getDatasets() {
-            return $.getJSON('https://api.opencovid.ca/datasets')
+            // request JSON from API
+            let response = await fetch('https://api.opencovid.ca/datasets')
+            let json = await response.json()
+            // return JSON data
+            return json
         }
 
         // function: get directories
         async function getDirs(json_datasets) {
             let parent_dirs = []
             // get parent directories ('meta_group_1')
-            $.each(json_datasets, function(k, v) {
-                parent_dirs.push(v['metadata']['meta_group_1'])
+            Object.keys(json_datasets).forEach(function(k) {
+                parent_dirs.push(json_datasets[k]['metadata']['meta_group_1'])
             });
             // sort unique values
             parent_dirs = [...new Set(parent_dirs)].sort()
@@ -78,22 +82,22 @@
                 return obj;
             }, {});
             // add second-level directories ('meta_group_2') to top-level directories
-            $.each(json_datasets, function(k, v) {
-                let dir = v['metadata']['meta_group_1']
-                let subdir = v['metadata']['meta_group_2']
+            Object.keys(json_datasets).forEach(function(k) {
+                let dir = json_datasets[k]['metadata']['meta_group_1']
+                let subdir = json_datasets[k]['metadata']['meta_group_2']
                 if (subdir != undefined) {
                     dirs[dir][subdir] = {}
                 };
             });
             // add second-level directory 'Parent' to top-level directories (in last place)
-            $.each(dirs, function(k, v) {
+            Object.keys(dirs).forEach(function(k) {
                 dirs[k]['Parent'] = {}
             });
             // add file groups ('meta_url_name') to second-level directories
-            $.each(json_datasets, function(k, v) {
-                let dir = v['metadata']['meta_group_1']
-                let subdir = v['metadata']['meta_group_2']
-                let file_group = v['metadata']['meta_url_name']
+            Object.keys(json_datasets).forEach(function(k) {
+                let dir = json_datasets[k]['metadata']['meta_group_1']
+                let subdir = json_datasets[k]['metadata']['meta_group_2']
+                let file_group = json_datasets[k]['metadata']['meta_url_name']
                 if (subdir == undefined) {
                     dirs[dir]['Parent'][file_group] = {}
                 } else {
@@ -101,8 +105,8 @@
                 };
             });
             // sort file groups
-            $.each(dirs, function(k, v) {
-                $.each(dirs[k], function(k2, v2) {
+            Object.keys(dirs).forEach(function(k) {
+                Object.keys(dirs[k]).forEach(function(k2) {
                     dirs[k][k2] = Object.keys(dirs[k][k2]).sort().reduce(function(obj, item) {
                         obj[item] = dirs[k][k2][item];
                         return obj;
@@ -116,21 +120,21 @@
         // function: add files to directories
         async function getFiles(json_datasets, dirs) {
             // add files to directories
-            $.each(json_datasets, function(k, v) {
-                let dir = v['metadata']['meta_group_1']
-                let subdir = v['metadata']['meta_group_2']
-                let file_group = v['metadata']['meta_url_name']
-                let file = v['metadata']['meta_name']
+            Object.keys(json_datasets).forEach(function(k) {
+                let dir = json_datasets[k]['metadata']['meta_group_1']
+                let subdir = json_datasets[k]['metadata']['meta_group_2']
+                let file_group = json_datasets[k]['metadata']['meta_url_name']
+                let file = json_datasets[k]['metadata']['meta_name']
                 if (subdir == undefined) {
-                    dirs[dir]['Parent'][file_group][file] = v
+                    dirs[dir]['Parent'][file_group][file] = json_datasets[k]
                 } else {
-                    dirs[dir][subdir][file_group][file] = v
+                    dirs[dir][subdir][file_group][file] = json_datasets[k]
                 };
             });
             // sort files
-            $.each(dirs, function(k, v) {
-                $.each(dirs[k], function(k2, v2) {
-                    $.each(dirs[k][k2], function(k3, v3) {
+            Object.keys(dirs).forEach(function(k) {
+                Object.keys(dirs[k]).forEach(function(k2) {
+                    Object.keys(dirs[k][k2], function(k3) {
                         dirs[k][k2][k3] = Object.keys(dirs[k][k2][k3]).sort().reduce(function(obj, item) {
                             obj[item] = dirs[k][k2][k3][item];
                             return obj;
@@ -146,23 +150,23 @@
         async function buildTree(dirs) {
             let root = new TreeNode('Archive')
             // add nodes for first-level directories
-            $.each(dirs, function(k, v) {
+            Object.keys(dirs).forEach(function(k) {
                 let node = new TreeNode(k)
                 root.addChild(node)
                 // add nodes for second-level directories
-                $.each(v, function(k2, v2) {
+                Object.keys(dirs[k]).forEach(function(k2) {
                     if (k2 != 'Parent') {
                         // second-level directory exists
                         let node2 = new TreeNode(k2)
                         node.addChild(node2)
                         // add nodes for third-level directories
-                        $.each(v2, function(k3, v3) {
+                        Object.keys(dirs[k][k2]).forEach(function(k3) {
                             let node3 = new TreeNode(k3)
                             node2.addChild(node3)
                             // add nodes for files
-                            $.each(v3, function(k4, v4) {
+                            Object.keys(dirs[k][k2][k3]).forEach(function(k4) {
                                 let node4 = new TreeNode(k4)
-                                node4.on('click', function(){buildTableFiles(v4['uuid']);}) // add table build function on click
+                                node4.on('click', function(){buildTableFiles(dirs[k][k2][k3][k4]['uuid']);}) // add table build function on click
                                 node3.addChild(node4)
                             });
                             node3.setExpanded(false) // collapsed by default
@@ -171,13 +175,13 @@
                     } else {
                         // second-level directory does not exist (i.e., use parent directory)
                         // add third-level directories
-                        $.each(v2, function(k3, v3) {
+                        Object.keys(dirs[k][k2]).forEach(function(k3) {
                             let node3 = new TreeNode(k3)
                             node.addChild(node3)
                             // add nodes for files
-                            $.each(v3, function(k4, v4) {
+                            Object.keys(dirs[k][k2][k3]).forEach(function(k4) {
                                 let node4 = new TreeNode(k4)
-                                node4.on('click', function(){buildTableFiles(v4['uuid']);}) // add table build function on click
+                                node4.on('click', function(){buildTableFiles(dirs[k][k2][k3][k4]['uuid']);}) // add table build function on click
                                 node3.addChild(node4)
                             });
                             node3.setExpanded(false) // collapsed by default
@@ -192,7 +196,12 @@
 
         // function: get UUID
         async function getUUID(uuid) {
-            return json_uuid = $.getJSON('https://api.opencovid.ca/archive?uuid=' + uuid)
+            let api_url = 'https://api.opencovid.ca/archive?uuid=' + uuid
+            // request JSON from API
+            let response = await fetch(api_url)
+            let json = await response.json()
+            // return JSON data
+            return json
         }
 
         // function: build files table
@@ -202,13 +211,13 @@
             const json_uuid = await getUUID(uuid)
             
             // modify raw variables
-            $.each(json_uuid, function (i, j) {
+            Object.keys(json_uuid).forEach(function (i) {
                 // construct HTML link to file for table
-                j['file_link'] = '<a href="' + j['file_url'] + '">' + j['file_name'] + '</a>'
+                json_uuid[i]['file_link'] = '<a href="' + json_uuid[i]['file_url'] + '">' + json_uuid[i]['file_name'] + '</a>'
                 // convert bytes to MB
-                j['file_size_mb'] = j['file_size'] / 1000000 + ' MB'
+                json_uuid[i]['file_size_mb'] = json_uuid[i]['file_size'] / 1000000 + ' MB'
                 // Duplicate or no
-                j['file_duplicate'] = j['file_etag_duplicate'] == 1 ? 'Yes' : 'No'
+                json_uuid[i]['file_duplicate'] = json_uuid[i]['file_etag_duplicate'] == 1 ? 'Yes' : 'No'
             });
 
             // initialize table or update table
@@ -280,9 +289,9 @@
             const datasets = Object.keys(json_datasets).map(key => json_datasets[key]);
 
             // add "url" value for entries with dynamic URLs
-            $.each(datasets, function(i, j) {
-                if (typeof(j["url"]) == "undefined") {
-                    j["url"] = "This URL is dynamic and retrieved from: " + j["metadata"]["meta_url"]
+            Object.keys(datasets).forEach(function(i) {
+                if (typeof(datasets[i]["url"]) == "undefined") {
+                    datasets[i]["url"] = "This URL is dynamic and retrieved from: " + datasets[i]["metadata"]["meta_url"]
                 }
             });
 
