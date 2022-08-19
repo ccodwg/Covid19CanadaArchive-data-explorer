@@ -212,13 +212,13 @@
             const json_uuid = await getUUID(uuid)
             
             // modify raw variables
-            Object.keys(json_uuid).forEach(function (i) {
+            Object.keys(json_uuid['data']).forEach(function (i) {
                 // construct HTML link to file for table
-                json_uuid[i]['file_link'] = '<a href="' + json_uuid[i]['file_url'] + '">' + json_uuid[i]['file_name'] + '</a>'
+                json_uuid['data'][i]['file_link'] = '<a href="' + json_uuid['data'][i]['file_url'] + '">' + json_uuid['data'][i]['file_name'] + '</a>'
                 // convert bytes to MB
-                json_uuid[i]['file_size_mb'] = json_uuid[i]['file_size'] / 1000000 + ' MB'
+                json_uuid['data'][i]['file_size_mb'] = json_uuid['data'][i]['file_size'] / 1000000 + ' MB'
                 // Duplicate or no
-                json_uuid[i]['file_duplicate'] = json_uuid[i]['file_etag_duplicate'] == 1 ? 'Yes' : 'No'
+                json_uuid['data'][i]['file_duplicate'] = json_uuid['data'][i]['file_etag_duplicate'] == 1 ? 'Yes' : 'No'
             });
 
             // initialize table or update table
@@ -226,7 +226,7 @@
                 // initialize table
                 $('#table-files').DataTable({
                 bAutoWidth : false,
-                aaData : json_uuid,
+                aaData : json_uuid['data'],
                 aoColumns : [
                     {
                         "data": "file_date_true"
@@ -272,7 +272,7 @@
             } else {
                 // update table
                 let datatable = $('#table-files').DataTable()
-                datatable.clear().rows.add(json_uuid).draw();
+                datatable.clear().rows.add(json_uuid['data']).draw();
             }
 
             // update API URL
@@ -362,19 +362,19 @@
             const json_datasets = await getDatasets()
 
             // get directories
-            let dirs = await getDirs(json_datasets)
+            let dirs = await getDirs(json_datasets['data'])
 
             // add files to directories
-            dirs = await getFiles(json_datasets, dirs)
+            dirs = await getFiles(json_datasets['data'], dirs)
 
             // build tree
             let root = await buildTree(dirs)
             
             // initialize tree
-            let tree = new TreeView(root, "#tree")
+            let tree = new TreeView(root, '#tree')
 
             // build datasets table
-            buildTableDatasets(json_datasets)
+            buildTableDatasets(json_datasets['data'])
         }
 
         // build page
