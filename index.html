@@ -40,7 +40,7 @@
             padding-bottom: 1%;
             border-style: double;
         }
-        #table-files td {
+        #table-files, #table-datasets td {
             word-break: break-word
         }
     </style>
@@ -254,14 +254,14 @@
                     {
                         title: "File size (MB)",
                         width: "20%",
-                        targets: 2,
-                        className: "dt-center"
+                        className: "dt-center",
+                        targets: 2
                     },
                     {
                         title: "Duplicate file?",
-                        width: "10%",
-                        targets: 3,
-                        className: "dt-center"
+                        width: "20%",
+                        className: "dt-center",
+                        targets: 3
                     }
                 ],
                 order: [[0, "desc"]]
@@ -289,10 +289,21 @@
             // extract data from JSON
             const datasets = Object.keys(json_datasets).map(key => json_datasets[key]);
 
-            // add "url" value for entries with dynamic URLs
-            Object.keys(datasets).forEach(function(i) {
-                if (typeof(datasets[i]["url"]) == "undefined") {
-                    datasets[i]["url"] = "This URL is dynamic and retrieved from: " + datasets[i]["metadata"]["meta_url"]
+            // create single group variable from meta_group_1 and meta_group_2
+            datasets.forEach(function(d) {
+                if (typeof(d['metadata']['meta_group_2']) == "undefined") {
+                    d['meta_group'] = d['metadata']['meta_group_1']
+                } else {
+                    d['meta_group'] = d['metadata']['meta_group_1'] + ' / ' + d['metadata']['meta_group_2']
+                }
+            });
+
+            // construct HTML link for URL
+            datasets.forEach(function(d) {
+                if (typeof(d['url']) == 'undefined') {
+                    d['url'] = 'Dynamic URL retrieved from: <a href="' + d['metadata']['meta_url'] + '">' + d['metadata']['meta_url'] + '</a>'
+                } else {
+                    d['url'] = '<a href="' + d['url'] + '">' + d['url'] + '</a>'
                 }
             });
 
@@ -302,13 +313,13 @@
                 aaData : datasets,
                 aoColumns : [
                     {
-                        "mData": "id_name"
+                        "mData": "meta_group"
                     },
                     {
-                        "mData": "dir_parent"
+                        "mData": "metadata.meta_url_name"
                     },
                     {
-                        "mData": "dir_file"
+                        "mData": "metadata.meta_name"
                     },
                     {
                         "mData": "active"
@@ -319,20 +330,24 @@
                 ],
                 columnDefs: [
                     {
-                        title: "Name",
+                        title: "Group",
+                        width: "10%",
                         targets: 0
                     },
                     {
-                        title: "Parent directory",
+                        title: "File group",
+                        width: "25%",
                         targets: 1
                     },
                     {
-                        title: "File directory",
+                        title: "File name",
+                        width: "25%",
                         targets: 2,
                     },
                     {
                         title: "Active?",
                         targets: 3,
+                        className: "dt-center",
                         searchable: false
                     },
                     {
@@ -340,7 +355,7 @@
                         targets: 4,
                     }
                 ],
-                order: [[0, "asc"]],
+                order: [[0, "asc"], [1, "asc"], [2, "asc"]],
                 pageLength: 25
                 });
         }
