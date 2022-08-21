@@ -297,8 +297,8 @@
                     d['meta_group'] = d['metadata']['meta_group_1'] + ' / ' + d['metadata']['meta_group_2']
                 }
             });
-
-            // construct HTML link for URL
+            
+            // create HTML link for URL
             datasets.forEach(function(d) {
                 if (typeof(d['url']) == 'undefined') {
                     d['url'] = 'Dynamic URL retrieved from: <a href="' + d['metadata']['meta_url'] + '">' + d['metadata']['meta_url'] + '</a>'
@@ -308,10 +308,16 @@
             });
 
             // initialize table
-            $('#table-datasets').DataTable({
+            let table = $('#table-datasets').DataTable({
                 bAutoWidth : false,
                 aaData : datasets,
                 aoColumns : [
+                    {
+                        className: 'dt-control',
+                        orderable: false,
+                        data: null,
+                        defaultContent: ''
+                    },
                     {
                         "mData": "meta_group"
                     },
@@ -330,34 +336,107 @@
                 ],
                 columnDefs: [
                     {
+                        title: "",
+                        width: "5%",
+                        targets: 0
+                    },
+                    {
                         title: "Group",
                         width: "10%",
-                        targets: 0
+                        targets: 1
                     },
                     {
                         title: "File group",
                         width: "25%",
-                        targets: 1
+                        targets: 2
                     },
                     {
                         title: "File name",
                         width: "25%",
-                        targets: 2,
+                        targets: 3,
                     },
                     {
                         title: "Active?",
-                        targets: 3,
+                        width: "10%",
+                        targets: 4,
                         className: "dt-center",
                         searchable: false
                     },
                     {
                         title: "URL",
-                        targets: 4,
+                        width: "25%",
+                        targets: 5,
                     }
                 ],
-                order: [[0, "asc"], [1, "asc"], [2, "asc"]],
+                order: [[1, "asc"], [2, "asc"], [3, "asc"]],
                 pageLength: 25
-                });
+            });
+
+            // construct row details
+            function row_details(d) {
+                let html =
+                '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">' +
+                    '<tr>' +
+                        '<td style="width:10%;">ID name:</td>' +
+                        '<td style="width:90%;">' + d['id_name'] + '</td>' +
+                    '</tr>' +
+                    '<tr>' +
+                        '<td>File group:</td>' +
+                        '<td><a href="' + d['metadata']['meta_url'] + '">' + d['metadata']['meta_url_name'] + '</a></td>' +
+                    '</tr>' +
+                    '<tr>' +
+                        '<td>File name:</td>' +
+                        '<td>' + d['metadata']['meta_name'] + '</td>' +
+                    '</tr>' +
+                    '<tr>' +
+                        '<td>Active:</td>' +
+                        '<td>' + d['active'] + '</td>' +
+                    '</tr>' +
+                    '<tr>' +
+                        '<td>URL:</td>' +
+                        '<td>' + d['url'] + '</td>' +
+                    '</tr>' +
+                    '<tr>' +
+                        '<td>UUID:</td>' +
+                        '<td><a href="https://api.opencovid.ca/archive?uuid=' + d['uuid'] + '">' + d['uuid'] + '</a></td>' +
+                    '</tr>' +
+                    '<tr>' +
+                        '<td>File path:</td>' +
+                        '<td>' + d['dir_parent'] + '/' + d['dir_file'] + '/' + d['file_name'] + '.' + d['file_ext'] + '</td>' +
+                    '</tr>' +
+                    (typeof(d['notes']['notes_data']) == "undefined" ? '' :
+                    '<tr>' +
+                        '<td>Data notes:</td>' +
+                        '<td>' + d['notes']['notes_data'] + '</td>' +
+                    '</tr>') +
+                    (typeof(d['notes']['notes_usage']) == "undefined" ? '' :
+                    '<tr>' +
+                        '<td>Usage notes:</td>' +
+                        '<td>' + d['notes']['notes_usage'] + '</td>' +
+                    '</tr>') +
+                    (typeof(d['notes']['notes_misc']) == "undefined" ? '' :
+                    '<tr>' +
+                        '<td>Misc notes:</td>' +
+                        '<td>' + d['notes']['notes_misc'] + '</td>' +
+                    '</tr>') +
+                '</table>'
+                return html
+            };
+
+            // add on click event for opening/closing row details
+            $('#table-datasets tbody').on('click', 'td.dt-control', function() {
+                // select row
+                let tr = $(this).closest('tr');
+                let row = table.row(tr);
+                // open or close row
+                if (row.child.isShown()) {
+                    row.child.hide();
+                    tr.removeClass('shown');
+                } else {
+                    row.child(row_details(row.data())).show();
+                    tr.addClass('shown');
+                }
+            });
         }
 
         // function: get value of parameter in query string
@@ -407,6 +486,9 @@
     </div>
 
     <h2 id="title-datasets" class="leftpad">Search list of datasets</h2>
+
+    <p class="leftpad">Click the green button to see more details about each dataset.</p>
+
     <div id="container-datasets" class="fullpad">
         <table id="table-datasets" class="display"></table></div>
     </div>
