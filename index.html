@@ -342,6 +342,9 @@
                     },
                     {
                         "mData": "url"
+                    },
+                    {
+                        "mData": "uuid"
                     }
                 ],
                 columnDefs: [
@@ -376,6 +379,12 @@
                         title: "URL",
                         width: "25%",
                         targets: 5,
+                    },
+                    {
+                        title: "UUID",
+                        targets: 6,
+                        visible: false,
+                        searchable: true
                     }
                 ],
                 order: [[1, "asc"], [2, "asc"], [3, "asc"]],
