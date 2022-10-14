@@ -41,6 +41,11 @@
             padding-bottom: 1%;
             border-style: double;
         }
+        span.file-link {
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
+        }
         #table-files, #table-datasets td {
             word-break: break-word
         }
@@ -345,6 +350,11 @@
                 }
             });
 
+            // create link to list of files
+            datasets.forEach(function(d) {
+                d['file_list'] = '<span class="file-link">Jump to file list</span>'
+            });
+
             // initialize table
             let table = $('#table-datasets').DataTable({
                 bAutoWidth : false,
@@ -369,7 +379,7 @@
                         "mData": "active"
                     },
                     {
-                        "mData": "url"
+                        "mData": "file_list",
                     },
                     {
                         "mData": "uuid"
@@ -388,12 +398,12 @@
                     },
                     {
                         title: "File group",
-                        width: "25%",
+                        width: "35%",
                         targets: 2
                     },
                     {
                         title: "File name",
-                        width: "25%",
+                        width: "30%",
                         targets: 3,
                     },
                     {
@@ -404,9 +414,11 @@
                         searchable: false
                     },
                     {
-                        title: "URL",
-                        width: "25%",
+                        title: "File list",
+                        width: "10%",
                         targets: 5,
+                        className: "dt-center",
+                        searchable: false
                     },
                     {
                         title: "UUID",
@@ -488,6 +500,17 @@
                     tr.addClass('shown');
                 }
             });
+
+            // add on click event for 'File list' column to jump to file list
+            $('#table-datasets tbody').on('click', '.file-link', function() {
+                // extract UUID from row data
+                let tr = $(this).closest('tr');
+                let row = table.row(tr);
+                let data = row.data();
+                let uuid = data['uuid'];
+                // set node to selected
+                window[uuid].setSelected(true)
+            });
         };
 
         // function: build page
@@ -498,14 +521,6 @@
 
             // get UUID param from URL
             const uuid_selected = getParamFromQueryString('uuid');
-
-            // // get directory structure for selected UUID
-            // if (uuid_selected != undefined) {
-            //     const uuid_selected_dirs = json_datasets['data'][uuid_selected]
-            //     console.log(uuid_selected_dirs)
-            // } else {
-            //     const uuid_selected_dirs = undefined
-            // }
 
             // get directories
             let dirs = await getDirs(json_datasets['data']);
