@@ -212,19 +212,7 @@
             });
             // open selected UUID
             if (uuid_selected != undefined) {
-                let selected = new TreePath(root, window[uuid_selected]);
-                // check if selected UUID is valid
-                if (selected.getPath().length > 0) {
-                    // open nodes
-                    selected.getPath().forEach(function(k){
-                        k.setExpanded(true);
-                    });
-                    // select final node
-                    window[uuid_selected].setSelected(true);
-                } else {
-                    // warning popup
-                    window.alert('Invalid UUID in query string: ' + uuid_selected);
-                };
+                jumpToFiles(uuid_selected)
             };
             return root
         };
@@ -503,14 +491,37 @@
 
             // add on click event for 'File list' column to jump to file list
             $('#table-datasets tbody').on('click', '.file-link', function() {
+                // unselect all existing nodes
+                window['tree'].getSelectedNodes().forEach(node => node.setSelected(false));
+                // collapse all existing nodes
+                window['tree'].collapseAllNodes();
                 // extract UUID from row data
                 let tr = $(this).closest('tr');
                 let row = table.row(tr);
                 let data = row.data();
                 let uuid = data['uuid'];
-                // set node to selected
-                window[uuid].setSelected(true)
+                // jump to file list
+                jumpToFiles(uuid);
+                // reload tree view
+                window['tree'].reload();
             });
+        };
+
+        // function: jump to file list
+        function jumpToFiles(uuid) {
+            // get tree path
+            if (typeof window[uuid] != 'undefined') {
+                let selected = new TreePath(window[uuid].getRoot(), window[uuid]);
+                // open nodes
+                selected.getPath().forEach(function(k){
+                    k.setExpanded(true);
+                });
+                // select final node
+                window[uuid].setSelected(true);
+            } else {
+                // warning popup
+                window.alert('Invalid UUID in query string: ' + uuid);
+            };
         };
 
         // function: build page
@@ -532,7 +543,7 @@
             let root = await buildTree(dirs, uuid_selected);
             
             // initialize tree
-            let tree = new TreeView(root, '#tree');
+            window['tree'] = new TreeView(root, '#tree');
 
             // set update time
             setUpdateTime();
