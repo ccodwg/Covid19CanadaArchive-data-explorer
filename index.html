@@ -166,6 +166,8 @@
         
         // function: build tree
         async function buildTree(dirs, uuid_selected) {
+            // create global container for tree nodes
+            window.tree_nodes = {}
             let root = new TreeNode('Archive')
             // add nodes for first-level directories
             Object.keys(dirs).forEach(function(k) {
@@ -184,9 +186,9 @@
                             // add nodes for files
                             Object.keys(dirs[k][k2][k3]).forEach(function(k4) {
                                 let uuid = dirs[k][k2][k3][k4]['uuid']
-                                window[uuid] = new TreeNode(k4)
-                                window[uuid].on('select', function(){buildTableFiles(uuid);}) // add table build function on click
-                                node3.addChild(window[uuid])
+                                tree_nodes[uuid] = new TreeNode(k4)
+                                tree_nodes[uuid].on('select', function(){buildTableFiles(uuid);}) // add table build function on click
+                                node3.addChild(tree_nodes[uuid])
                             });
                             node3.setExpanded(false) // collapsed by default
                         });
@@ -200,9 +202,9 @@
                             // add nodes for files
                             Object.keys(dirs[k][k2][k3]).forEach(function(k4) {
                                 let uuid = dirs[k][k2][k3][k4]['uuid']
-                                window[uuid] = new TreeNode(k4)
-                                window[uuid].on('select', function(){buildTableFiles(uuid);}) // add table build function on click
-                                node3.addChild(window[uuid])
+                                tree_nodes[uuid] = new TreeNode(k4)
+                                tree_nodes[uuid].on('select', function(){buildTableFiles(uuid);}) // add table build function on click
+                                node3.addChild(tree_nodes[uuid])
                             });
                             node3.setExpanded(false) // collapsed by default
                         });
@@ -493,9 +495,9 @@
             document.getElementById('table-datasets').addEventListener('click', function(e) {
                 if (e.target.classList.contains('file-link')) {
                     // unselect all existing nodes
-                    window['tree'].getSelectedNodes().forEach(node => node.setSelected(false));
+                    tree_nodes['tree'].getSelectedNodes().forEach(node => node.setSelected(false));
                     // collapse all existing nodes
-                    window['tree'].collapseAllNodes();
+                    tree_nodes['tree'].collapseAllNodes();
                     // extract UUID from row data
                     let tr = e.target.closest('tr');
                     let row = table.row(tr);
@@ -504,7 +506,7 @@
                     // jump to file list
                     jumpToFiles(uuid);
                     // reload tree view
-                    window['tree'].reload();
+                    tree_nodes['tree'].reload();
                 };
             });
         };
@@ -512,14 +514,14 @@
         // function: jump to file list
         function jumpToFiles(uuid) {
             // get tree path
-            if (typeof window[uuid] != 'undefined') {
-                let selected = new TreePath(window[uuid].getRoot(), window[uuid]);
+            if (typeof tree_nodes[uuid] != 'undefined') {
+                let selected = new TreePath(tree_nodes[uuid].getRoot(), tree_nodes[uuid]);
                 // open nodes
                 selected.getPath().forEach(function(k){
                     k.setExpanded(true);
                 });
                 // select final node
-                window[uuid].setSelected(true);
+                tree_nodes[uuid].setSelected(true);
             } else {
                 // warning popup
                 window.alert('Invalid UUID in query string: ' + uuid);
@@ -545,7 +547,7 @@
             let root = await buildTree(dirs, uuid_selected);
             
             // initialize tree
-            window['tree'] = new TreeView(root, '#tree');
+            tree_nodes['tree'] = new TreeView(root, '#tree');
 
             // set update time
             setUpdateTime();
