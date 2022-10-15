@@ -253,9 +253,9 @@
             });
 
             // initialize table or update table
-            if (!$.fn.dataTable.isDataTable($('#table-files'))) {
+            if (!DataTable.isDataTable('#table-files')) {
                 // initialize table
-                $('#table-files').DataTable({
+                new DataTable('#table-files', {
                 bAutoWidth : false,
                 aaData : json_uuid['data'],
                 aoColumns : [
@@ -298,20 +298,20 @@
                 order: [[0, "desc"]]
                 });
                 // enable table
-                $('.half-right').css('display', 'inline-block')
+                document.getElementById('table-container').style.display = 'inline-block'
 
             } else {
                 // update table
-                let datatable = $('#table-files').DataTable()
+                let datatable = new DataTable('#table-files');
                 datatable.clear().rows.add(json_uuid['data']).draw();
             }
 
             // update API URL
             let api_url = 'https://api.opencovid.ca/archive?uuid=' + uuid
-            $('#api-url').html('<a href="' + api_url + '">' + api_url + '</a>')
+            document.getElementById('api-url').innerHTML = ('<a target="_blank" href="' + api_url + '">' + api_url + '</a>')
 
             // jump to top of page
-            $('#title-archive')[0].scrollIntoView();
+            document.getElementById('table-container').scrollIntoView(alignToTop=true);
         };
 
         // function: build datasets table
@@ -344,7 +344,7 @@
             });
 
             // initialize table
-            let table = $('#table-datasets').DataTable({
+            let table = new DataTable('#table-datasets', {
                 bAutoWidth : false,
                 aaData : datasets,
                 aoColumns : [
@@ -475,35 +475,37 @@
             };
 
             // add on click event for opening/closing row details
-            $('#table-datasets tbody').on('click', 'td.dt-control', function() {
-                // select row
-                let tr = $(this).closest('tr');
-                let row = table.row(tr);
-                // open or close row
-                if (row.child.isShown()) {
-                    row.child.hide();
-                    tr.removeClass('shown');
-                } else {
-                    row.child(row_details(row.data())).show();
-                    tr.addClass('shown');
-                }
+            document.getElementById('table-datasets').addEventListener('click', function(e) {
+                if (e.target.classList.contains('dt-control')) {
+                    let tr = e.target.closest('tr');
+                    let row = table.row(tr);
+                    if (row.child.isShown()) {
+                        row.child.hide();
+                        tr.classList.remove('shown');
+                    } else {
+                        row.child(row_details(row.data())).show();
+                        tr.classList.add('shown');
+                    };
+                };
             });
-
-            // add on click event for 'File list' column to jump to file list
-            $('#table-datasets tbody').on('click', '.file-link', function() {
-                // unselect all existing nodes
-                window['tree'].getSelectedNodes().forEach(node => node.setSelected(false));
-                // collapse all existing nodes
-                window['tree'].collapseAllNodes();
-                // extract UUID from row data
-                let tr = $(this).closest('tr');
-                let row = table.row(tr);
-                let data = row.data();
-                let uuid = data['uuid'];
-                // jump to file list
-                jumpToFiles(uuid);
-                // reload tree view
-                window['tree'].reload();
+            
+            // add on click event for 'File list' column to jump to file list without jQuery
+            document.getElementById('table-datasets').addEventListener('click', function(e) {
+                if (e.target.classList.contains('file-link')) {
+                    // unselect all existing nodes
+                    window['tree'].getSelectedNodes().forEach(node => node.setSelected(false));
+                    // collapse all existing nodes
+                    window['tree'].collapseAllNodes();
+                    // extract UUID from row data
+                    let tr = e.target.closest('tr');
+                    let row = table.row(tr);
+                    let data = row.data();
+                    let uuid = data['uuid'];
+                    // jump to file list
+                    jumpToFiles(uuid);
+                    // reload tree view
+                    window['tree'].reload();
+                };
             });
         };
 
