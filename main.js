@@ -189,70 +189,82 @@ async function buildTableFiles(uuid) {
 
     // get JSON for UUID
     const json_uuid = await getUUID(uuid)
-    
-    // modify raw variables
-    Object.keys(json_uuid['data']).forEach(function (i) {
-        // construct HTML link to file for table
-        json_uuid['data'][i]['file_link'] = '<a href="' + json_uuid['data'][i]['file_url'] + '">' + json_uuid['data'][i]['file_name'] + '</a>'
-        // convert bytes to MB
-        json_uuid['data'][i]['file_size_mb'] = json_uuid['data'][i]['file_size'] / 1000000 + ' MB'
-        // Duplicate or no
-        json_uuid['data'][i]['file_duplicate'] = json_uuid['data'][i]['file_etag_duplicate'] == 1 ? 'Yes' : 'No'
-    });
 
-    // initialize table or update table
-    if (!DataTable.isDataTable('#table-files')) {
-        // initialize table
-        new DataTable('#table-files', {
-        bAutoWidth : false,
-        aaData : json_uuid['data'],
-        aoColumns : [
-            {
-                "data": "file_date_true"
-            },
-            {
-                "data": "file_link"
-            },
-            {
-                "data": "file_size_mb"
-            },
-            {
-                "data": "file_duplicate"
-            }
-        ],
-        columnDefs: [
-            {
-                title: "Date",
-                width: "20%",
-                targets: 0
-            },
-            {
-                title: "File name",
-                targets: 1
-            },
-            {
-                title: "File size (MB)",
-                width: "20%",
-                className: "dt-center",
-                targets: 2
-            },
-            {
-                title: "Duplicate file?",
-                width: "20%",
-                className: "dt-center",
-                targets: 3
-            }
-        ],
-        order: [[0, "desc"]]
-        });
-        // enable table
-        document.getElementById('table-container').style.display = 'inline-block'
+    // show table container
+    document.getElementById('table-container').style.display = 'inline-block';
 
+    // check if UUID is valid
+    if (typeof json_uuid['data'] == 'undefined') {
+        // show error message
+        document.getElementById('files-error').style.display = 'inline-block';
+        // hide table
+        document.getElementById('table-div').style.display = 'none';
     } else {
-        // update table
-        let datatable = new DataTable('#table-files');
-        datatable.clear().rows.add(json_uuid['data']).draw();
-    }
+        // hide error message
+        document.getElementById('files-error').style.display = 'none';
+        // show table
+        document.getElementById('table-div').style.display = 'inline-block';
+        // modify raw variables
+        Object.keys(json_uuid['data']).forEach(function (i) {
+            // construct HTML link to file for table
+            json_uuid['data'][i]['file_link'] = '<a href="' + json_uuid['data'][i]['file_url'] + '">' + json_uuid['data'][i]['file_name'] + '</a>'
+            // convert bytes to MB
+            json_uuid['data'][i]['file_size_mb'] = json_uuid['data'][i]['file_size'] / 1000000 + ' MB'
+            // Duplicate or no
+            json_uuid['data'][i]['file_duplicate'] = json_uuid['data'][i]['file_etag_duplicate'] == 1 ? 'Yes' : 'No'
+        });
+
+        // initialize table or update table
+        if (!DataTable.isDataTable('#table-files')) {
+            // initialize table
+            new DataTable('#table-files', {
+            bAutoWidth : false,
+            aaData : json_uuid['data'],
+            aoColumns : [
+                {
+                    "data": "file_date_true"
+                },
+                {
+                    "data": "file_link"
+                },
+                {
+                    "data": "file_size_mb"
+                },
+                {
+                    "data": "file_duplicate"
+                }
+            ],
+            columnDefs: [
+                {
+                    title: "Date",
+                    width: "20%",
+                    targets: 0
+                },
+                {
+                    title: "File name",
+                    targets: 1
+                },
+                {
+                    title: "File size (MB)",
+                    width: "20%",
+                    className: "dt-center",
+                    targets: 2
+                },
+                {
+                    title: "Duplicate file?",
+                    width: "20%",
+                    className: "dt-center",
+                    targets: 3
+                }
+            ],
+            order: [[0, "desc"]]
+            });
+        } else {
+            // update table
+            let datatable = new DataTable('#table-files');
+            datatable.clear().rows.add(json_uuid['data']).draw();
+        };
+    };
 
     // update API URL
     let api_url = 'https://api.opencovid.ca/archive?uuid=' + uuid
@@ -437,7 +449,7 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
         };
     });
     
-    // add on click event for 'File list' column to jump to file list without jQuery
+    // add on click event for 'File list' column to jump to file list
     document.getElementById('table-datasets').addEventListener('click', function(e) {
         if (e.target.classList.contains('file-link')) {
             // unselect all existing nodes
