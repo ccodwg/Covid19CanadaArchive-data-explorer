@@ -1,0 +1,37 @@
+h2.leftpad {
+    padding-left: 1%;
+}
+p.leftpad {
+    padding-left: 1%;
+}
+div.half {
+    box-sizing: border-box;
+    width: 50%;
+    padding-left: 2%;
+    padding-right: 4%;
+    display: inline-block;
+    vertical-align: text-top;
+    border-style: double;
+}
+div.half-right {
+    display: none;
+    padding-top: 1%;
+    padding-bottom: 1%;
+    /* position: fixed; */
+    /* top: 20px; */
+}
+div.fullpad {
+    padding-left: 1%;
+    padding-right: 1%;
+    padding-top: 1%;
+    padding-bottom: 1%;
+    border-style: double;
+}
+span.file-link {
+    cursor: pointer;
+    color: blue;
+    text-decoration: underline;
+}
+#table-files, #table-datasets td {
+    word-break: break-word
+}
