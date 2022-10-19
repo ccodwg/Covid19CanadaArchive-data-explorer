@@ -176,10 +176,10 @@ async function setUpdateTime() {
 
 // function: get UUID
 async function getUUID(uuid) {
-    let api_url = 'https://api.opencovid.ca/archive?uuid=' + uuid
+    const api_url = 'https://api.opencovid.ca/archive?uuid=' + uuid
     // request JSON from API
-    let response = await fetch(api_url)
-    let json = await response.json()
+    const response = await fetch(api_url)
+    const json = await response.json()
     // return JSON data
     return json
 };
@@ -191,19 +191,19 @@ async function buildTableFiles(uuid) {
     const json_uuid = await getUUID(uuid)
 
     // show table container
-    document.getElementById('table-container').style.display = 'inline-block';
+    document.getElementById('table-container').classList.remove('hidden');
 
     // check if UUID is valid
     if (typeof json_uuid['data'] == 'undefined') {
         // show error message
-        document.getElementById('files-error').style.display = 'inline-block';
+        document.getElementById('files-error').classList.remove('hidden');
         // hide table
-        document.getElementById('table-div').style.display = 'none';
+        document.getElementById('table-files-container').classList.add('hidden');
     } else {
         // hide error message
-        document.getElementById('files-error').style.display = 'none';
+        document.getElementById('files-error').classList.add('hidden');
         // show table
-        document.getElementById('table-div').style.display = 'inline-block';
+        document.getElementById('table-files-container').classList.remove('hidden');
         // modify raw variables
         Object.keys(json_uuid['data']).forEach(function (i) {
             // construct HTML link to file for table

@@ -3,7 +3,10 @@
 <head>
     <title>Canadian COVID-19 Data Archive: Data Explorer</title>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/png" href="./favicon.png">
+    <!-- load Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
     <!-- load jQuery DataTables -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js"></script>
@@ -16,22 +19,61 @@
     <script src="main.js"></script>
 </head>
 <body>
-    <h2 id="title-archive" class="leftpad">Canadian COVID-19 Data Archive: Data Explorer</h2>
-
-    <p class="leftpad">Datasets are identified by name; see <a href="#table-datasets">Search list of datasets</a> for more details on each dataset.</p>
-
-    <div id="container-files">
-        <div id="tree" class="half"></div><div id="table-container" class="half half-right"><p id="files-error" class="leftpad" style="display: none;">No data available for this UUID.</p><div id="table-div"><table id="table-files" class="display"></table></div><p class="leftpad">Data retrieved from: <span id="api-url"></span></p></div>
+    <!-- header -->
+    <header class="navbar navbar-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <img src="favicon.png" alt="" width="30" height="30" class="d-inline-block align-text-top">
+                Canadian COVID-19 Data Archive: Data Explorer
+            </a>
+        </div>
+    </header>
+    <!-- tree and file list -->
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">
+                <div class="card text-dark bg-light mb-3">
+                    <div class="card-body">
+                        <p>Datasets are identified by name; see <a href="#title-datasets">Search list of datasets</a> for more details on each dataset.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="card text-dark bg-light mb-3">
+                    <div class="card-body">
+                        <div id="tree"></div>
+                        <p><span id="update-time"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div id="table-container" class="card text-dark bg-light mb-3 hidden">
+                    <div class="card-body">
+                        <div id="files-error" class="hidden">
+                            <p>No data available for this UUID.</p>
+                        </div>
+                        <div id="table-files-container">
+                            <table id="table-files" class="display"></table>
+                        </div>
+                        <p>Data retrieved from: <span id="api-url"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <p class="leftpad"><span id="update-time"></span></p>
-
-    <h2 id="title-datasets" class="leftpad">Search list of datasets</h2>
-
-    <p class="leftpad">Click the green button to see more details about each dataset.</p>
-
-    <div id="container-datasets" class="fullpad">
-        <table id="table-datasets" class="display"></table></div>
+    <!-- datasets table -->
+    <div class="container-fluid">
+        <div class="card text-dark bg-light mb-3">
+            <div class="card-body">
+                <h4 id="title-datasets" >Search list of datasets</h4>
+                <p>Click the green button to see more details about each dataset.</p>
+                <div id="container-datasets">
+                    <table id="table-datasets" class="display"></table>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 </html>
