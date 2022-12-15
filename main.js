@@ -211,7 +211,7 @@ async function buildTableFiles(uuid) {
             // convert bytes to MB
             json_uuid['data'][i]['file_size_mb'] = json_uuid['data'][i]['file_size'] / 1000000 + ' MB'
             // Duplicate or no
-            json_uuid['data'][i]['file_duplicate'] = json_uuid['data'][i]['file_etag_duplicate'] == 1 ? 'Yes' : 'No'
+            json_uuid['data'][i]['file_duplicate'] = json_uuid['data'][i]['file_duplicate'] == 1 ? 'Yes' : 'No'
         });
 
         // initialize table or update table
@@ -222,7 +222,7 @@ async function buildTableFiles(uuid) {
             aaData : json_uuid['data'],
             aoColumns : [
                 {
-                    "data": "file_date_true"
+                    "data": "file_date"
                 },
                 {
                     "data": "file_link"
