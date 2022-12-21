@@ -22,9 +22,11 @@
     <!-- header -->
     <header class="navbar navbar-light">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <img src="favicon.png" alt="" width="30" height="30" class="d-inline-block align-text-top">
-                Canadian COVID-19 Data Archive: Data Explorer
+            <a class="navbar-brand px-2" href="#">
+                <p class="navbar-text">
+                    <img src="favicon.png" alt="" width="30" height="30" class="d-inline-block align-text-top">
+                    Canadian COVID-19 Data Archive: Data Explorer
+                </p>
             </a>
         </div>
     </header>
@@ -40,7 +42,7 @@
             </div>
         </div>
         <div class="row">
-            <div class="col">
+            <div class="col-sm-6">
                 <div class="card text-dark bg-light mb-3">
                     <div class="card-body">
                         <div id="tree"></div>
@@ -48,7 +50,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col">
+            <div class="col-sm-6">
                 <div id="table-container" class="card text-dark bg-light mb-3 hidden">
                     <div class="card-body">
                         <div id="files-error" class="hidden">
@@ -65,12 +67,16 @@
     </div>
     <!-- datasets table -->
     <div class="container-fluid">
-        <div class="card text-dark bg-light mb-3">
-            <div class="card-body">
-                <h4 id="title-datasets" >Search list of datasets</h4>
-                <p>Click the green button to see more details about each dataset.</p>
-                <div id="container-datasets">
-                    <table id="table-datasets" class="display"></table>
+        <div class="row">
+            <div class="col">
+                <div class="card text-dark bg-light mb-3">
+                    <div class="card-body">
+                        <h4 id="title-datasets" >Search list of datasets</h4>
+                        <p>Click the green button to see more details about each dataset.</p>
+                        <div id="container-datasets">
+                            <table id="table-datasets" class="display"></table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -280,6 +280,11 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
     // extract data from JSON
     const datasets = Object.keys(json_datasets).map(key => json_datasets[key]);
 
+    // convert active True / False to check mark / cross mark
+    datasets.forEach(function(d) {
+        d['active'] = d['active'] == 'True' ? '\u2705' : '\u274c'
+    });
+
     // create single group variable from meta_group_1 and meta_group_2
     datasets.forEach(function(d) {
         if (typeof(d['metadata']['meta_group_2']) == "undefined") {
@@ -355,7 +360,7 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
                 targets: 3,
             },
             {
-                title: "Active?",
+                title: "Active",
                 width: "10%",
                 targets: 4,
                 className: "dt-center",
