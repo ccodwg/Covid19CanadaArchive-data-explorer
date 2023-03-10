@@ -218,46 +218,68 @@ async function buildTableFiles(uuid) {
         if (!DataTable.isDataTable('#table-files')) {
             // initialize table
             new DataTable('#table-files', {
-            bAutoWidth : false,
-            aaData : json_uuid['data'],
-            aoColumns : [
-                {
-                    "data": "file_date"
-                },
-                {
-                    "data": "file_link"
-                },
-                {
-                    "data": "file_size_mb"
-                },
-                {
-                    "data": "file_duplicate"
+                bAutoWidth : false,
+                aaData : json_uuid['data'],
+                aoColumns : [
+                    {
+                        "data": "file_date"
+                    },
+                    {
+                        "data": "file_link"
+                    },
+                    {
+                        "data": "file_size_mb"
+                    },
+                    {
+                        "data": "file_duplicate"
+                    }
+                ],
+                columnDefs: [
+                    {
+                        title: "Date",
+                        width: "20%",
+                        targets: 0
+                    },
+                    {
+                        title: "File name",
+                        targets: 1
+                    },
+                    {
+                        title: "File size (MB)",
+                        width: "20%",
+                        className: "dt-center",
+                        targets: 2
+                    },
+                    {
+                        title: "Duplicate file?",
+                        width: "20%",
+                        className: "dt-center",
+                        targets: 3,
+                        orderable: false
+                    }
+                ],
+                order: [[0, "desc"]],
+                // add column filter for duplicate files
+                initComplete: function() {
+                    this.api()
+                        .columns(3)
+                        .every(function() {
+                            var column = this;
+                            var select = $('<select>><option label="Duplicate file?" value=""></option></select>')
+                                .appendTo($(column.header()).empty())
+                                .on('change', function () {
+                                    var val = $.fn.dataTable.util.escapeRegex($(this).val());
+                                    column.search(val ? '^' + val + '$' : '', true, false).draw();
+                                });
+                            column
+                                .data()
+                                .unique()
+                                .sort()
+                                .each(function(d, j) {
+                                    select.append('<option value="' + d + '">' + d + '</option>');
+                                });
+                        });
                 }
-            ],
-            columnDefs: [
-                {
-                    title: "Date",
-                    width: "20%",
-                    targets: 0
-                },
-                {
-                    title: "File name",
-                    targets: 1
-                },
-                {
-                    title: "File size (MB)",
-                    width: "20%",
-                    className: "dt-center",
-                    targets: 2
-                },
-                {
-                    title: "Duplicate file?",
-                    width: "20%",
-                    className: "dt-center",
-                    targets: 3
-                }
-            ],
-            order: [[0, "desc"]]
             });
         } else {
             // update table
