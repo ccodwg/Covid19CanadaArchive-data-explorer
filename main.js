@@ -190,8 +190,11 @@ async function buildTableFiles(uuid) {
     // get JSON for UUID
     const json_uuid = await getUUID(uuid)
 
-    // show table container
-    document.getElementById('table-container').classList.remove('hidden');
+    // hide file selection message
+    document.getElementById('files-select').classList.add('hidden');
+
+    // show loading message
+    document.getElementById('files-loading').classList.remove('hidden');
 
     // check if UUID is valid
     if (typeof json_uuid['data'] == 'undefined') {
@@ -291,6 +294,10 @@ async function buildTableFiles(uuid) {
     // update API URL
     let api_url = 'https://api.opencovid.ca/archive?uuid=' + uuid
     document.getElementById('api-url').innerHTML = ('<a target="_blank" href="' + api_url + '">' + api_url + '</a>')
+    document.getElementById('api-url').classList.remove('hidden');
+
+    // hide loading message
+    document.getElementById('files-loading').classList.add('hidden');
 
     // jump to top of page
     document.getElementById('table-container').scrollIntoView(alignToTop=true);

@@ -51,15 +51,23 @@
                 </div>
             </div>
             <div class="col-sm-6">
-                <div id="table-container" class="card text-dark bg-light mb-3 hidden">
+                <div id="table-container" class="card text-dark bg-light mb-3">
                     <div class="card-body">
+                        <div id="files-select">
+                            <p>Select a dataset to see the list of files.</p>
+                        </div>
+                        <div id="files-loading" class="hidden">
+                            <p>Loading...</p>
+                        </div>
                         <div id="files-error" class="hidden">
                             <p>No data available for this UUID.</p>
                         </div>
                         <div id="table-files-container">
                             <table id="table-files" class="display"></table>
                         </div>
-                        <p>Data retrieved from: <span id="api-url"></span></p>
+                        <div id="api-text" class="hidden">
+                            <p>Data retrieved from: <span id="api-url"></span></p>
+                        </div>
                     </div>
                 </div>
             </div>
