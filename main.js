@@ -426,7 +426,7 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
         initComplete: function() {
             this.api()
                 .columns([1, 4])
-                .every(function() {
+                .every(function(i) {
                     var column = this;
                     var header = $(column.header());
                     var selectContainer = $('<div></div>').appendTo(header);
@@ -436,13 +436,20 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
                             var val = $.fn.dataTable.util.escapeRegex($(this).val());
                             column.search(val ? '^' + val + '$' : '', true, false).draw();
                         });
-                    column
+                    var uniqueData = column
                         .data()
                         .unique()
-                        .sort()
-                        .each(function(d) {
-                            select.append('<option value="' + d + '">' + d + '</option>');
+                        .sort();
+                    if (i === 1) {
+                        uniqueData.sort(function(a, b) {
+                            if (a.startsWith("Other:") && !b.startsWith("Other:")) return 1;
+                            if (!a.startsWith("Other:") && b.startsWith("Other:")) return -1;
+                            return a.localeCompare(b);
                         });
+                    }
+                    uniqueData.each(function(d) {
+                        select.append('<option value="' + d + '">' + d + '</option>');
+                    });
                 });
         }
     });
