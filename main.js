@@ -268,8 +268,10 @@ async function buildTableFiles(uuid) {
                         .columns(3)
                         .every(function() {
                             var column = this;
-                            var select = $('<select>><option label="Duplicate file?" value=""></option></select>')
-                                .appendTo($(column.header()).empty())
+                            var header = $(column.header());
+                            var selectContainer = $('<div></div>').appendTo(header);
+                            var select = $('<select><option label="Show all" value=""></option></select>')
+                                .appendTo(selectContainer)
                                 .on('change', function () {
                                     var val = $.fn.dataTable.util.escapeRegex($(this).val());
                                     column.search(val ? '^' + val + '$' : '', true, false).draw();
@@ -278,7 +280,7 @@ async function buildTableFiles(uuid) {
                                 .data()
                                 .unique()
                                 .sort()
-                                .each(function(d, j) {
+                                .each(function(d) {
                                     select.append('<option value="' + d + '">' + d + '</option>');
                                 });
                         });
@@ -376,24 +378,29 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
             {
                 title: "Group",
                 width: "10%",
-                targets: 1
+                targets: 1,
+                searchable: true,
+                orderable: false
             },
             {
                 title: "File group",
                 width: "35%",
-                targets: 2
+                targets: 2,
+                searchable: true
             },
             {
                 title: "File name",
                 width: "30%",
                 targets: 3,
+                searchable: true
             },
             {
                 title: "Active",
                 width: "10%",
                 targets: 4,
                 className: "dt-center",
-                searchable: false
+                searchable: true,
+                orderable: false
             },
             {
                 title: "File list",
@@ -414,6 +421,29 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
         // pre-fill search box
         search: {
             search: (uuid_selected != undefined ? uuid_selected : '')
+        },
+        // add column filters for group and active
+        initComplete: function() {
+            this.api()
+                .columns([1, 4])
+                .every(function() {
+                    var column = this;
+                    var header = $(column.header());
+                    var selectContainer = $('<div></div>').appendTo(header);
+                    var select = $('<select><option label="Show all" value=""></option></select>')
+                        .appendTo(selectContainer)
+                        .on('change', function () {
+                            var val = $.fn.dataTable.util.escapeRegex($(this).val());
+                            column.search(val ? '^' + val + '$' : '', true, false).draw();
+                        });
+                    column
+                        .data()
+                        .unique()
+                        .sort()
+                        .each(function(d) {
+                            select.append('<option value="' + d + '">' + d + '</option>');
+                        });
+                });
         }
     });
 
