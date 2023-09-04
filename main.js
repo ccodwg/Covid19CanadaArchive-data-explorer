@@ -53,6 +53,13 @@ async function getDirs(json_datasets) {
             dirs[dir][subdir] = {}
         };
     });
+    // sort second-level directories
+    Object.keys(dirs).forEach(function(k) {
+        dirs[k] = Object.keys(dirs[k]).sort().reduce(function(obj, item) {
+            obj[item] = dirs[k][item];
+            return obj;
+        }, {});
+    });
     // add second-level directory 'Parent' to top-level directories (in last place)
     Object.keys(dirs).forEach(function(k) {
         dirs[k]['Parent'] = {}
@@ -71,7 +78,9 @@ async function getDirs(json_datasets) {
     // sort file groups
     Object.keys(dirs).forEach(function(k) {
         Object.keys(dirs[k]).forEach(function(k2) {
-            dirs[k][k2] = Object.keys(dirs[k][k2]).sort().reduce(function(obj, item) {
+            dirs[k][k2] = Object.keys(dirs[k][k2]).sort(function(a, b) {
+                return a.toLowerCase().localeCompare(b.toLowerCase());
+            }).reduce(function(obj, item) {
                 obj[item] = dirs[k][k2][item];
                 return obj;
             }, {});
