@@ -11,11 +11,18 @@ function getParamFromQueryString(param) {
 
 // function: get datasets
 async function getDatasets() {
-    // request JSON from API
-    const response = await fetch('https://api.opencovid.ca/datasets')
+    // request JSON from GitHub
+    const response = await fetch('https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive/master/datasets.json')
     const json = await response.json()
-    // return JSON data
-    return json
+    // unpack datasets
+    const out = [];
+    Object.values(json).forEach(j => {
+        Object.values(j).forEach(k => {
+        out.push(...k);
+        });
+    });
+    // return datasets list
+    return out
 };
 
 // function: get directories
@@ -176,18 +183,15 @@ async function buildTree(dirs, uuid_selected) {
 
 // function: set update time
 async function setUpdateTime() {
-    // get update time
-    const response = await fetch('https://api.opencovid.ca/version?route=archive&date_only=false')
-    const json = await response.json()
-    // set update time
-    document.getElementById('update-time').innerHTML = 'Archive index was last updated: ' + json['archive']
+    // set update time (static)
+    document.getElementById('update-time').innerHTML = 'Archive index was last updated: ' + '2024-01-31 22:45 EST'
 };
 
 // function: get UUID
 async function getUUID(uuid) {
-    const api_url = 'https://api.opencovid.ca/archive?uuid=' + uuid
-    // request JSON from API
-    const response = await fetch(api_url)
+    const index_url = 'https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive-index/main/uuid/' + uuid + '.json'
+    // request JSON from GitHub
+    const response = await fetch(index_url)
     const json = await response.json()
     // return JSON data
     return json
@@ -206,7 +210,7 @@ async function buildTableFiles(uuid) {
     document.getElementById('files-loading').classList.remove('hidden');
 
     // check if UUID is valid
-    if (typeof json_uuid['data'] == 'undefined') {
+    if (typeof json_uuid == 'undefined') {
         // show error message
         document.getElementById('files-error').classList.remove('hidden');
         // hide table
@@ -217,13 +221,13 @@ async function buildTableFiles(uuid) {
         // show table
         document.getElementById('table-files-container').classList.remove('hidden');
         // modify raw variables
-        Object.keys(json_uuid['data']).forEach(function (i) {
+        Object.keys(json_uuid).forEach(function (i) {
             // construct HTML link to file for table
-            json_uuid['data'][i]['file_link'] = '<a href="' + json_uuid['data'][i]['file_url'] + '">' + json_uuid['data'][i]['file_name'] + '</a>'
+            json_uuid[i]['file_link'] = json_uuid[i]['file_name']
             // convert bytes to MB
-            json_uuid['data'][i]['file_size_mb'] = json_uuid['data'][i]['file_size'] / 1000000 + ' MB'
+            json_uuid[i]['file_size_mb'] = json_uuid[i]['file_size'] / 1000000 + ' MB'
             // Duplicate or no
-            json_uuid['data'][i]['file_duplicate'] = json_uuid['data'][i]['file_duplicate'] == 1 ? 'Yes' : 'No'
+            json_uuid[i]['file_duplicate'] = json_uuid[i]['file_duplicate'] == 1 ? 'Yes' : 'No'
         });
 
         // initialize table or update table
@@ -231,7 +235,7 @@ async function buildTableFiles(uuid) {
             // initialize table
             new DataTable('#table-files', {
                 bAutoWidth : false,
-                aaData : json_uuid['data'],
+                aaData : json_uuid,
                 aoColumns : [
                     {
                         "data": "file_date"
@@ -298,14 +302,14 @@ async function buildTableFiles(uuid) {
         } else {
             // update table
             let datatable = new DataTable('#table-files');
-            datatable.clear().rows.add(json_uuid['data']).draw();
+            datatable.clear().rows.add(json_uuid).draw();
         };
     };
 
-    // update API URL
-    let api_url = 'https://api.opencovid.ca/archive?uuid=' + uuid
-    document.getElementById('api-url').innerHTML = ('<a target="_blank" href="' + api_url + '">' + api_url + '</a>')
-    document.getElementById('api-url').classList.remove('hidden');
+    // update index URL
+    let index_url = 'https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive-index/main/uuid/' + uuid + '.json'
+    document.getElementById('index-url').innerHTML = ('<a target="_blank" href="' + index_url + '">' + index_url + '</a>')
+    document.getElementById('index-text').classList.remove('hidden');
 
     // hide loading message
     document.getElementById('files-loading').classList.add('hidden');
@@ -489,7 +493,7 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
             '</tr>' +
             '<tr>' +
                 '<td>UUID:</td>' +
-                '<td><a href="https://api.opencovid.ca/archive?uuid=' + d['uuid'] + '">' + d['uuid'] + '</a></td>' +
+                '<td><a href="https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive-index/main/uuid/' + d['uuid'] + '.json' + '">' + d['uuid'] + '</a></td>' +
             '</tr>' +
             '<tr>' +
                 '<td>File path:</td>' +
@@ -576,10 +580,10 @@ async function buildPage() {
     const uuid_selected = getParamFromQueryString('uuid');
 
     // get directories
-    let dirs = await getDirs(json_datasets['data']);
+    let dirs = await getDirs(json_datasets);
 
     // add files to directories
-    dirs = await getFiles(json_datasets['data'], dirs);
+    dirs = await getFiles(json_datasets, dirs);
 
     // build tree
     let root = await buildTree(dirs, uuid_selected);
@@ -591,7 +595,7 @@ async function buildPage() {
     setUpdateTime();
 
     // build datasets table
-    buildTableDatasets(json_datasets['data'], uuid_selected);
+    buildTableDatasets(json_datasets, uuid_selected);
 };
 
 // build page
