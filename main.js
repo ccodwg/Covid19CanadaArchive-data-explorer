@@ -324,17 +324,14 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
     // extract data from JSON
     const datasets = Object.keys(json_datasets).map(key => json_datasets[key]);
 
-    // convert active True / False to check mark / cross mark
-    datasets.forEach(function(d) {
-        d['active'] = d['active'] == 'True' ? '\u2705' : '\u274c'
-    });
-
     // create single group variable from meta_group_1 and meta_group_2
     datasets.forEach(function(d) {
         if (typeof(d['metadata']['meta_group_2']) == "undefined") {
             d['meta_group'] = d['metadata']['meta_group_1']
+            d['meta_group_short'] = d['meta_group']
         } else {
             d['meta_group'] = d['metadata']['meta_group_1'] + ' / ' + d['metadata']['meta_group_2']
+            d['meta_group_short'] = d['meta_group'].replace(": Non-governmental sources", "")
         }
     });
     
@@ -364,16 +361,13 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
                 defaultContent: ''
             },
             {
-                "mData": "meta_group"
+                "mData": "meta_group_short"
             },
             {
                 "mData": "metadata.meta_url_name"
             },
             {
                 "mData": "metadata.meta_name"
-            },
-            {
-                "mData": "active"
             },
             {
                 "mData": "file_list",
@@ -403,28 +397,20 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
             },
             {
                 title: "File name",
-                width: "30%",
+                width: "40%",
                 targets: 3,
                 searchable: true
             },
             {
-                title: "Active",
-                width: "10%",
-                targets: 4,
-                className: "dt-center",
-                searchable: true,
-                orderable: false
-            },
-            {
                 title: "File list",
                 width: "10%",
-                targets: 5,
+                targets: 4,
                 className: "dt-center",
                 searchable: false
             },
             {
                 title: "UUID",
-                targets: 6,
+                targets: 5,
                 visible: false,
                 searchable: true
             }
@@ -435,10 +421,10 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
         search: {
             search: (uuid_selected != undefined ? uuid_selected : '')
         },
-        // add column filters for group and active
+        // add column filters for group
         initComplete: function() {
             this.api()
-                .columns([1, 4])
+                .columns([1])
                 .every(function(i) {
                     var column = this;
                     var header = $(column.header());
@@ -455,8 +441,8 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
                         .sort();
                     if (i === 1) {
                         uniqueData.sort(function(a, b) {
-                            if (a.startsWith("Other:") && !b.startsWith("Other:")) return 1;
-                            if (!a.startsWith("Other:") && b.startsWith("Other:")) return -1;
+                            if (a.startsWith("Other /") && !b.startsWith("Other /")) return 1;
+                            if (!a.startsWith("Other /") && b.startsWith("Other /")) return -1;
                             return a.localeCompare(b);
                         });
                     }
@@ -476,16 +462,16 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
                 '<td style="width:90%;">' + d['id_name'] + '</td>' +
             '</tr>' +
             '<tr>' +
+                '<td>Group:</td>' +
+                '<td>' + d['meta_group'] + '</td>' +
+            '</tr>' +
+            '<tr>' +
                 '<td>File group:</td>' +
                 '<td><a href="' + d['metadata']['meta_url'] + '">' + d['metadata']['meta_url_name'] + '</a></td>' +
             '</tr>' +
             '<tr>' +
                 '<td>File name:</td>' +
                 '<td>' + d['metadata']['meta_name'] + '</td>' +
-            '</tr>' +
-            '<tr>' +
-                '<td>Active:</td>' +
-                '<td>' + d['active'] + '</td>' +
             '</tr>' +
             '<tr>' +
                 '<td>URL:</td>' +
