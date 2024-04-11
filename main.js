@@ -189,7 +189,7 @@ async function setUpdateTime() {
 
 // function: get UUID
 async function getUUID(uuid) {
-    const index_url = 'https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive-index/main/uuid/' + uuid + '.json'
+    const index_url = 'https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive-index/main/uuid/json/' + uuid + '.json'
     // request JSON from GitHub
     const response = await fetch(index_url)
     const json = await response.json()
@@ -222,8 +222,9 @@ async function buildTableFiles(uuid) {
         document.getElementById('table-files-container').classList.remove('hidden');
         // modify raw variables
         Object.keys(json_uuid).forEach(function (i) {
+            uuid = json_uuid[i]['uuid']
             // construct HTML link to file for table
-            json_uuid[i]['file_link'] = json_uuid[i]['file_name']
+            json_uuid[i]['file_link'] = `<a href="${json_uuid[i]['file_url']}">${json_uuid[i]['file_name']}</a>`
             // convert bytes to MB
             json_uuid[i]['file_size_mb'] = json_uuid[i]['file_size'] / 1000000 + ' MB'
             // Duplicate or no
@@ -307,8 +308,11 @@ async function buildTableFiles(uuid) {
     };
 
     // update index URL
-    let index_url = 'https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive-index/main/uuid/' + uuid + '.json'
-    document.getElementById('index-url').innerHTML = ('<a target="_blank" href="' + index_url + '">' + index_url + '</a>')
+    let index_url_json = 'https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive-index/main/uuid/json/' + uuid + '.json';
+    let index_url_csv = 'https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive-index/main/uuid/csv/' + uuid + '.csv';
+    document.getElementById('index-url-json').innerHTML = ('<a target="_blank" href="' + index_url_json + '">' + 'JSON' + '</a>');
+    document.getElementById('index-url-csv').innerHTML = ('<a target="_blank" href="' + index_url_csv + '">' + 'CSV' + '</a>');
+    document.getElementById('zip-url').innerHTML = ('<a target="_blank" href="https://archive.org/download/cc19da_' + uuid + '/cc19da_' + uuid + '.zip">ZIP download link</a>');
     document.getElementById('index-text').classList.remove('hidden');
 
     // hide loading message
