@@ -483,7 +483,7 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
             '</tr>' +
             '<tr>' +
                 '<td>UUID:</td>' +
-                '<td><a href="https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive-index/main/uuid/' + d['uuid'] + '.json' + '">' + d['uuid'] + '</a></td>' +
+                '<td><a href="https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive-index/main/uuid/json/' + d['uuid'] + '.json' + '">' + d['uuid'] + '</a></td>' +
             '</tr>' +
             '<tr>' +
                 '<td>File path:</td>' +

@@ -9,6 +9,11 @@ span.file-link {
     color: blue;
     text-decoration: underline;
 }
+small {
+    display: block;
+    color: #555;
+    margin-top: 2px;
+}
 #table-files, #table-datasets td {
     word-break: break-word
 }
