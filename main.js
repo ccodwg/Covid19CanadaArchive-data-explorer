@@ -1,3 +1,7 @@
+const DATASETS_URL = 'https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive/master/datasets.json';
+const INDEX_BASE_URL = 'https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive-index/main/uuid';
+const tree_nodes = {};
+
 // function: get value of parameter in query string
 function getParamFromQueryString(param) {
     const params = new Proxy(new URLSearchParams(window.location.search), {
@@ -12,13 +16,16 @@ function getParamFromQueryString(param) {
 // function: get datasets
 async function getDatasets() {
     // request JSON from GitHub
-    const response = await fetch('https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive/master/datasets.json')
+    const response = await fetch(DATASETS_URL)
+    if (!response.ok) {
+        throw new Error('Dataset catalogue request failed (' + response.status + ')');
+    }
     const json = await response.json()
     // unpack datasets
     const out = [];
     Object.values(json).forEach(j => {
         Object.values(j).forEach(k => {
-        out.push(...k);
+            out.push(...k);
         });
     });
     // return datasets list
@@ -38,7 +45,7 @@ async function getDirs(json_datasets) {
     let max_dirs = parent_dirs.length
     let parent_dirs_other = []
     for (let i = 0; i < max_dirs; i++) {
-        d = parent_dirs[i]
+        const d = parent_dirs[i]
         if (d.match('Other: ')) {
             parent_dirs_other.push(d)
         }
@@ -48,7 +55,7 @@ async function getDirs(json_datasets) {
     });
     parent_dirs = parent_dirs.concat(parent_dirs_other)
     // convert array to object
-    dirs = parent_dirs.reduce(function(obj, item) {
+    const dirs = parent_dirs.reduce(function(obj, item) {
         obj[item] = {};
         return obj;
     }, {});
@@ -104,19 +111,25 @@ async function getFiles(json_datasets, dirs) {
         let dir = json_datasets[k]['metadata']['meta_group_1']
         let subdir = json_datasets[k]['metadata']['meta_group_2']
         let file_group = json_datasets[k]['metadata']['meta_url_name']
-        let file = json_datasets[k]['metadata']['meta_name']
+        let uuid = json_datasets[k]['uuid']
         if (subdir == undefined) {
-            dirs[dir]['Parent'][file_group][file] = json_datasets[k]
+            dirs[dir]['Parent'][file_group][uuid] = json_datasets[k]
         } else {
-            dirs[dir][subdir][file_group][file] = json_datasets[k]
+            dirs[dir][subdir][file_group][uuid] = json_datasets[k]
         };
     });
-    // sort files
+    // sort files by their displayed names
     Object.keys(dirs).forEach(function(k) {
         Object.keys(dirs[k]).forEach(function(k2) {
-            Object.keys(dirs[k][k2], function(k3) {
-                dirs[k][k2][k3] = Object.keys(dirs[k][k2][k3]).sort().reduce(function(obj, item) {
-                    obj[item] = dirs[k][k2][k3][item];
+            Object.keys(dirs[k][k2]).forEach(function(k3) {
+                dirs[k][k2][k3] = Object.entries(dirs[k][k2][k3]).sort(function(a, b) {
+                    const name_a = a[1]['metadata']['meta_name'];
+                    const name_b = b[1]['metadata']['meta_name'];
+                    if (name_a < name_b) return -1;
+                    if (name_a > name_b) return 1;
+                    return a[0].localeCompare(b[0]);
+                }).reduce(function(obj, item) {
+                    obj[item[0]] = item[1];
                     return obj;
                 }, {});
             });
@@ -128,8 +141,6 @@ async function getFiles(json_datasets, dirs) {
 
 // function: build tree
 async function buildTree(dirs, uuid_selected) {
-    // create global container for tree nodes
-    window.tree_nodes = {}
     let root = new TreeNode('Archive')
     // add nodes for first-level directories
     Object.keys(dirs).forEach(function(k) {
@@ -146,9 +157,9 @@ async function buildTree(dirs, uuid_selected) {
                     let node3 = new TreeNode(k3)
                     node2.addChild(node3)
                     // add nodes for files
-                    Object.keys(dirs[k][k2][k3]).forEach(function(k4) {
-                        let uuid = dirs[k][k2][k3][k4]['uuid']
-                        tree_nodes[uuid] = new TreeNode(k4)
+                    Object.keys(dirs[k][k2][k3]).forEach(function(uuid) {
+                        let dataset = dirs[k][k2][k3][uuid]
+                        tree_nodes[uuid] = new TreeNode(dataset['metadata']['meta_name'])
                         tree_nodes[uuid].on('select', function(){buildTableFiles(uuid);}) // add table build function on click
                         node3.addChild(tree_nodes[uuid])
                     });
@@ -162,9 +173,9 @@ async function buildTree(dirs, uuid_selected) {
                     let node3 = new TreeNode(k3)
                     node.addChild(node3)
                     // add nodes for files
-                    Object.keys(dirs[k][k2][k3]).forEach(function(k4) {
-                        let uuid = dirs[k][k2][k3][k4]['uuid']
-                        tree_nodes[uuid] = new TreeNode(k4)
+                    Object.keys(dirs[k][k2][k3]).forEach(function(uuid) {
+                        let dataset = dirs[k][k2][k3][uuid]
+                        tree_nodes[uuid] = new TreeNode(dataset['metadata']['meta_name'])
                         tree_nodes[uuid].on('select', function(){buildTableFiles(uuid);}) // add table build function on click
                         node3.addChild(tree_nodes[uuid])
                     });
@@ -189,9 +200,12 @@ async function setUpdateTime() {
 
 // function: get UUID
 async function getUUID(uuid) {
-    const index_url = 'https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive-index/main/uuid/json/' + uuid + '.json'
+    const index_url = INDEX_BASE_URL + '/json/' + uuid + '.json'
     // request JSON from GitHub
     const response = await fetch(index_url)
+    if (!response.ok) {
+        throw new Error('Dataset index request failed (' + response.status + ')');
+    }
     const json = await response.json()
     // return JSON data
     return json
@@ -200,35 +214,30 @@ async function getUUID(uuid) {
 // function: build files table
 async function buildTableFiles(uuid) {
 
-    // get JSON for UUID
-    const json_uuid = await getUUID(uuid)
-
-    // hide file selection message
+    // update loading state
     document.getElementById('files-select').classList.add('hidden');
-
-    // show loading message
     document.getElementById('files-loading').classList.remove('hidden');
+    document.getElementById('files-error').classList.add('hidden');
+    document.getElementById('index-text').classList.add('hidden');
 
-    // check if UUID is valid
-    if (typeof json_uuid == 'undefined') {
-        // show error message
-        document.getElementById('files-error').classList.remove('hidden');
-        // hide table
-        document.getElementById('table-files-container').classList.add('hidden');
-    } else {
-        // hide error message
-        document.getElementById('files-error').classList.add('hidden');
+    try {
+        // get JSON for UUID
+        const json_uuid = await getUUID(uuid)
+        if (!Array.isArray(json_uuid)) {
+            throw new Error('Dataset index did not contain a file list');
+        }
+
         // show table
         document.getElementById('table-files-container').classList.remove('hidden');
+
         // modify raw variables
-        Object.keys(json_uuid).forEach(function (i) {
-            uuid = json_uuid[i]['uuid']
+        Object.keys(json_uuid).forEach(function(i) {
             // construct HTML link to file for table
-            json_uuid[i]['file_link'] = `<a href="${json_uuid[i]['file_url']}">${json_uuid[i]['file_name']}</a>`
+            json_uuid[i]['file_link'] = '<a href="' + json_uuid[i]['file_url'] + '">' + json_uuid[i]['file_name'] + '</a>'
             // convert bytes to MB
             json_uuid[i]['file_size_mb'] = json_uuid[i]['file_size'] / 1000000 + ' MB'
             // Duplicate or no
-            json_uuid[i]['file_duplicate'] = json_uuid[i]['file_duplicate'] == 1 ? 'Yes' : 'No'
+            json_uuid[i]['file_duplicate'] = Number(json_uuid[i]['file_duplicate']) === 1 ? 'Yes' : 'No'
         });
 
         // initialize table or update table
@@ -284,9 +293,9 @@ async function buildTableFiles(uuid) {
                             var column = this;
                             var header = $(column.header());
                             var selectContainer = $('<div></div>').appendTo(header);
-                            var select = $('<select><option label="Show all" value=""></option></select>')
+                            var select = $('<select aria-label="Filter by duplicate status"><option label="Show all" value=""></option></select>')
                                 .appendTo(selectContainer)
-                                .on('change', function () {
+                                .on('change', function() {
                                     var val = $.fn.dataTable.util.escapeRegex($(this).val());
                                     column.search(val ? '^' + val + '$' : '', true, false).draw();
                                 });
@@ -295,7 +304,7 @@ async function buildTableFiles(uuid) {
                                 .unique()
                                 .sort()
                                 .each(function(d) {
-                                    select.append('<option value="' + d + '">' + d + '</option>');
+                                    select.append($('<option></option>').val(d).text(d));
                                 });
                         });
                 }
@@ -305,21 +314,22 @@ async function buildTableFiles(uuid) {
             let datatable = new DataTable('#table-files');
             datatable.clear().rows.add(json_uuid).draw();
         };
-    };
 
-    // update index URL
-    let index_url_json = 'https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive-index/main/uuid/json/' + uuid + '.json';
-    let index_url_csv = 'https://raw.githubusercontent.com/ccodwg/Covid19CanadaArchive-index/main/uuid/csv/' + uuid + '.csv';
-    document.getElementById('index-url-json').innerHTML = ('<a target="_blank" href="' + index_url_json + '">' + 'JSON' + '</a>');
-    document.getElementById('index-url-csv').innerHTML = ('<a target="_blank" href="' + index_url_csv + '">' + 'CSV' + '</a>');
-    document.getElementById('zip-url').innerHTML = ('<a target="_blank" href="https://archive.org/download/cc19da_' + uuid + '/cc19da_' + uuid + '.zip">ZIP download link</a>');
-    document.getElementById('index-text').classList.remove('hidden');
-
-    // hide loading message
-    document.getElementById('files-loading').classList.add('hidden');
-
-    // jump to top of page
-    document.getElementById('table-container').scrollIntoView(alignToTop=true);
+        // update index URLs
+        document.getElementById('index-url-json').href = INDEX_BASE_URL + '/json/' + uuid + '.json';
+        document.getElementById('index-url-csv').href = INDEX_BASE_URL + '/csv/' + uuid + '.csv';
+        document.getElementById('zip-url').href = 'https://archive.org/download/cc19da_' + uuid + '/cc19da_' + uuid + '.zip';
+        document.getElementById('selected-uuid').textContent = uuid;
+        document.getElementById('index-text').classList.remove('hidden');
+    } catch (error) {
+        console.error('Unable to load files for UUID ' + uuid + ':', error);
+        document.getElementById('table-files-container').classList.add('hidden');
+        document.getElementById('files-error').classList.remove('hidden');
+    } finally {
+        // hide loading message and jump to the file list
+        document.getElementById('files-loading').classList.add('hidden');
+        document.getElementById('table-container').scrollIntoView(true);
+    }
 };
 
 // function: build datasets table
@@ -350,7 +360,7 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
 
     // create link to list of files
     datasets.forEach(function(d) {
-        d['file_list'] = '<span class="file-link">Jump to file list</span>'
+        d['file_list'] = '<button type="button" class="btn btn-link p-0 file-link">Jump to file list</button>'
     });
 
     // initialize table
@@ -433,7 +443,7 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
                     var column = this;
                     var header = $(column.header());
                     var selectContainer = $('<div></div>').appendTo(header);
-                    var select = $('<select><option label="Show all" value=""></option></select>')
+                    var select = $('<select aria-label="Filter datasets by group"><option label="Show all" value=""></option></select>')
                         .appendTo(selectContainer)
                         .on('change', function () {
                             var val = $.fn.dataTable.util.escapeRegex($(this).val());
@@ -460,7 +470,7 @@ async function buildTableDatasets(json_datasets, uuid_selected) {
     // construct row details
     function row_details(d) {
         let html =
-        '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">' +
+        '<table class="table table-sm mb-0 dataset-details">' +
             '<tr>' +
                 '<td style="width:10%;">ID name:</td>' +
                 '<td style="width:90%;">' + d['id_name'] + '</td>' +
@@ -562,30 +572,39 @@ function jumpToFiles(uuid) {
 
 // function: build page
 async function buildPage() {
+    const loading_message = document.getElementById('datasets-loading');
+    const error_message = document.getElementById('datasets-error');
 
-    // get JSON datasets
-    const json_datasets = await getDatasets();
+    try {
+        // get JSON datasets
+        const json_datasets = await getDatasets();
 
-    // get UUID param from URL
-    const uuid_selected = getParamFromQueryString('uuid');
+        // get UUID param from URL
+        const uuid_selected = getParamFromQueryString('uuid');
 
-    // get directories
-    let dirs = await getDirs(json_datasets);
+        // get directories
+        let dirs = await getDirs(json_datasets);
 
-    // add files to directories
-    dirs = await getFiles(json_datasets, dirs);
+        // add files to directories
+        dirs = await getFiles(json_datasets, dirs);
 
-    // build tree
-    let root = await buildTree(dirs, uuid_selected);
-    
-    // initialize tree
-    tree_nodes['tree'] = new TreeView(root, '#tree');
+        // build tree
+        let root = await buildTree(dirs, uuid_selected);
 
-    // set update time
-    setUpdateTime();
+        // initialize tree
+        tree_nodes['tree'] = new TreeView(root, '#tree');
 
-    // build datasets table
-    buildTableDatasets(json_datasets, uuid_selected);
+        // set update time
+        setUpdateTime();
+
+        // build datasets table
+        buildTableDatasets(json_datasets, uuid_selected);
+    } catch (error) {
+        console.error('Unable to build the Data Explorer:', error);
+        error_message.classList.remove('hidden');
+    } finally {
+        loading_message.classList.add('hidden');
+    }
 };
 
 // build page

@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>Canadian COVID-19 Data Archive: Data Explorer</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Browse and download historical Canadian COVID-19 datasets from the Canadian COVID-19 Data Archive.">
     <link rel="icon" type="image/png" href="./favicon.png">
     <!-- load Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
@@ -16,82 +17,131 @@
     <link rel="stylesheet" href="lib/treejs/treejs.min.css">
     <!-- load main files -->
     <link rel="stylesheet" href="main.css">
-    <script src="main.js"></script>
+    <script src="main.js" defer></script>
 </head>
 <body>
     <!-- header -->
     <header class="navbar navbar-light">
         <div class="container-fluid">
-            <a class="navbar-brand px-2" href="#">
-                <p class="navbar-text">
-                    <img src="favicon.png" alt="" width="30" height="30" class="d-inline-block align-text-top">
-                    Canadian COVID-19 Data Archive: Data Explorer
-                </p>
+            <a class="navbar-brand d-flex align-items-center gap-2 px-2" href="./">
+                <img src="favicon.png" alt="" width="30" height="30">
+                <span>Canadian COVID-19 Data Archive: Data Explorer</span>
             </a>
         </div>
     </header>
-    <!-- tree and file list -->
-    <div class="container-fluid">
+    <main class="container-fluid">
+        <!-- archive introduction and access links -->
         <div class="row">
             <div class="col">
-                <div class="card text-dark bg-light mb-3">
+                <section class="card text-dark bg-light mb-3" aria-labelledby="about-explorer">
                     <div class="card-body">
-                        <p>Datasets are identified by name; see <a href="#title-datasets">Search list of datasets</a> for more details on each dataset.</p>
+                        <h1 id="about-explorer" class="h5">About the Data Explorer</h1>
+                        <p>
+                            This is the searchable catalogue for the
+                            <a href="https://github.com/ccodwg/Covid19CanadaArchive" target="_blank" rel="noopener noreferrer">Canadian COVID-19 Data Archive</a>,
+                            a historical collection of Canadian COVID-19 datasets, documents, and webpages spanning March 2020 to January 2024.
+                            Automated daily archiving concluded January 31, 2024.
+                        </p>
+                        <p>
+                            <strong>Using the explorer:</strong> Browse the tree to choose a dataset and display its archived files.
+                            Use the <a href="#title-datasets">searchable dataset table</a> below to find datasets, inspect their metadata, or jump directly to a file list.
+                        </p>
+                        <p>
+                            <strong>Downloads:</strong> Open individual files from a selected dataset, download all files for that dataset as a ZIP,
+                            or access its JSON or CSV index. For archive-wide access, use the complete SQLite file index.
+                        </p>
+                        <ul class="list-inline archive-links mb-0" aria-label="Archive resources">
+                            <li class="list-inline-item"><a href="https://github.com/ccodwg/Covid19CanadaArchive" target="_blank" rel="noopener noreferrer">Archive documentation</a></li>
+                            <li class="list-inline-item"><a href="https://archive.org/details/canadian-covid-19-data-archive" target="_blank" rel="noopener noreferrer">Internet Archive collection</a></li>
+                            <li class="list-inline-item"><a href="https://archive.org/download/cc19da_ops/index.db" target="_blank" rel="noopener noreferrer">Download the complete SQLite index (index.db)</a></li>
+                        </ul>
+                        <details class="archive-index-help mt-3">
+                            <summary class="fw-semibold">How to use the complete SQLite index</summary>
+                            <div class="mt-2">
+                                <p>
+                                    Open <code>index.db</code> with the SQLite command-line tool, a desktop SQLite browser, or a programming language with SQLite support.
+                                    It contains one table, <code>archive</code>, with one row per indexed file. In the query below, replace the example value with the UUID displayed after selecting a dataset,
+                                    or find it by <a href="#title-datasets">expanding a row in the searchable catalogue</a>.
+                                    The <code>file_duplicate = 0</code> condition excludes duplicate snapshots.
+                                </p>
+                                <pre class="bg-white border rounded p-2 overflow-auto"><code>SELECT uuid, file_name, file_date
+FROM archive
+WHERE uuid = 'your-dataset-uuid'
+  AND file_duplicate = 0
+ORDER BY file_date;</code></pre>
+                                <p class="mb-0">
+                                    Download a result by substituting its <code>uuid</code> and <code>file_name</code> into this URL pattern:
+                                    <code class="d-block bg-white border rounded p-2 mt-1 text-break">https://archive.org/download/cc19da_{uuid}/cc19da_{uuid}.zip/{file_name}</code>
+                                </p>
+                            </div>
+                        </details>
                     </div>
-                </div>
+                </section>
             </div>
         </div>
+        <!-- dataset tree and file list -->
         <div class="row">
-            <div class="col-sm-6">
-                <div class="card text-dark bg-light mb-3">
+            <div class="col-lg-5">
+                <section class="card text-dark bg-light mb-3" aria-labelledby="title-tree">
                     <div class="card-body">
+                        <h2 id="title-tree" class="h5">Browse datasets</h2>
+                        <p>Datasets are identified by name and grouped by source. Select a dataset to see its files.</p>
+                        <p id="datasets-loading" role="status">Loading datasets...</p>
+                        <p id="datasets-error" class="hidden text-danger" role="alert">Unable to load the dataset catalogue. Please try again later.</p>
                         <div id="tree"></div>
-                        <p><span id="update-time"></span></p>
+                        <p id="update-time" class="small text-muted"></p>
                     </div>
-                </div>
+                </section>
             </div>
-            <div class="col-sm-6">
-                <div id="table-container" class="card text-dark bg-light mb-3">
+            <div class="col-lg-7">
+                <section id="table-container" class="card text-dark bg-light mb-3" aria-labelledby="title-files">
                     <div class="card-body">
+                        <h2 id="title-files" class="h5">Archived files</h2>
                         <div id="files-select">
                             <p>Select a dataset to see the list of files.</p>
                         </div>
-                        <div id="files-loading" class="hidden">
-                            <p>Loading...</p>
+                        <div id="files-loading" class="hidden" role="status">
+                            <p>Loading files...</p>
                         </div>
-                        <div id="files-error" class="hidden">
-                            <p>No data available for this UUID.</p>
+                        <div id="files-error" class="hidden text-danger" role="alert">
+                            <p>Unable to load files for this dataset.</p>
                         </div>
                         <div id="table-files-container">
-                            <table id="table-files" class="display"></table>
+                            <table id="table-files" class="display">
+                                <caption class="visually-hidden">Archived files for the selected dataset</caption>
+                            </table>
                         </div>
                         <div id="index-text" class="hidden">
-                            <p>
-                                Retrieved from data index: <span id="index-url-json"></span> | <span id="index-url-csv"></span><br>
-                                Download all files as a single ZIP<sup>†</sup>: <span id="zip-url"></span><br>
-                                <small><sup>†</sup>May include additional files in a "supplementary" directory.</small>
+                            <p class="mb-0">
+                                Dataset UUID: <code id="selected-uuid" class="text-break"></code><br>
+                                Retrieved from data index:
+                                <a id="index-url-json" target="_blank" rel="noopener noreferrer">JSON</a> |
+                                <a id="index-url-csv" target="_blank" rel="noopener noreferrer">CSV</a><br>
+                                Download all files as a single ZIP<sup>†</sup>:
+                                <a id="zip-url" target="_blank" rel="noopener noreferrer">ZIP download link</a><br>
+                                <small class="d-block text-muted mt-1"><sup>†</sup>May include additional files in a "supplementary" directory.</small>
                             </p>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
         </div>
-    </div>
-    <!-- datasets table -->
-    <div class="container-fluid">
+        <!-- searchable dataset table -->
         <div class="row">
             <div class="col">
-                <div class="card text-dark bg-light mb-3">
+                <section class="card text-dark bg-light mb-3" aria-labelledby="title-datasets">
                     <div class="card-body">
-                        <h4 id="title-datasets" >Search list of datasets</h4>
-                        <p>Click the green button to see more details about each dataset.</p>
+                        <h2 id="title-datasets" class="h5">Search list of datasets</h2>
+                        <p>Search the catalogue or use the green control to see complete metadata, including the dataset UUID. Known UUIDs can also be entered in the search box.</p>
                         <div id="container-datasets">
-                            <table id="table-datasets" class="display"></table>
+                            <table id="table-datasets" class="display">
+                                <caption class="visually-hidden">Searchable catalogue of archived datasets</caption>
+                            </table>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
         </div>
-    </div>
+    </main>
 </body>
 </html>

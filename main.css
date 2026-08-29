@@ -1,19 +1,45 @@
-div.hidden {
+.hidden {
     display: none;
 }
-div.card-body {
-    padding-bottom: 0;
+
+.archive-links li:not(:last-child)::after {
+    color: #6c757d;
+    content: "\00b7";
+    margin-left: 0.5rem;
 }
-span.file-link {
+
+.archive-index-help summary {
     cursor: pointer;
-    color: blue;
-    text-decoration: underline;
 }
-small {
-    display: block;
-    color: #555;
-    margin-top: 2px;
+
+#table-files-container,
+#container-datasets {
+    overflow-x: auto;
 }
-#table-files, #table-datasets td {
-    word-break: break-word
+
+#table-files,
+#table-datasets {
+    width: 100% !important;
+}
+
+#table-files td,
+#table-datasets td {
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 575.98px) {
+    .navbar-brand {
+        align-items: flex-start !important;
+        font-size: 1rem;
+        white-space: normal;
+    }
+
+    .archive-links .list-inline-item {
+        display: block;
+        margin-right: 0;
+    }
+
+    .archive-links li:not(:last-child)::after {
+        content: none;
+    }
 }
